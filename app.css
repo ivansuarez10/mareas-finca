@@ -1,0 +1,82 @@
+/* Mareas de la Finca · ronda 3 · pantallas (diseño del 05 + estados del 09). Usa tokens.css. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; background: var(--fondo); color: var(--tinta); font-family: var(--fuente); font-size: 1rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+h1, h2, p, ol, ul { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+.i { width: 1.5rem; height: 1.5rem; flex: none; fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; border-radius: 6px; }
+/* Títulos y días reciben foco por programa (al cambiar de pantalla): nunca pintan aro, no son controles */
+[tabindex="-1"]:focus { outline: none; }
+.app { max-width: 30rem; margin: 0 auto; min-height: 100vh; padding-bottom: 28px; }
+.hr { white-space: nowrap; }
+.hr.sola { display: block; }
+.hr.sola .pt { display: none; }
+
+/* Cabecera marina: una sola pieza, una o dos líneas, nada más */
+.barra { background: var(--marino); color: #fff; padding: 16px var(--pad) 18px; }
+.barra .nombre { font-size: var(--t-sufijo); font-weight: 600; color: var(--cab-2); }
+.barra .ahora { margin-top: 2px; font-size: var(--t-dia); font-weight: 700; line-height: 1.25; }
+.fila-cab { display: flex; align-items: center; gap: 4px; margin: -8px 0; }
+.barra .volver { display: inline-flex; align-items: center; justify-content: center; min-width: var(--objetivo); min-height: var(--objetivo); margin-left: -12px; color: #fff; text-decoration: none; }
+.barra .titulo { font-size: var(--t-titulo); font-weight: 700; line-height: 1.2; }
+.barra :focus-visible { outline-color: #fff; }
+
+main { padding: var(--margen); display: block; }
+
+/* Próximas: UNA superficie blanca, dos filas separadas por un filete. Sin fondos de color. */
+.proximas { background: var(--superficie); border-radius: var(--radio); }
+.proxima { padding: 18px 20px 20px; }
+.proxima + .proxima { border-top: 1px solid var(--regla); }
+.etiqueta { display: flex; align-items: center; gap: 10px; font-size: var(--t-etiqueta); font-weight: 700; line-height: 1.2; }
+.etiqueta .i { color: var(--acento); width: 1.75rem; height: 1.75rem; stroke-width: 2; }
+.hora { margin-top: 4px; display: flex; align-items: baseline; gap: 8px; line-height: 1.05; }
+.hora b { font-size: var(--t-hora-grande); font-weight: 800; letter-spacing: -.01em; }
+.hora span { font-size: var(--t-sufijo-grande); font-weight: 600; color: var(--tinta-2); white-space: nowrap; }
+.apoyo { margin-top: 6px; font-size: var(--t-apoyo); font-weight: 500; color: var(--tinta-2); line-height: 1.25; }
+.direccion { padding: 14px 20px 16px; border-top: 1px solid var(--regla); font-size: var(--t-direccion); font-weight: 600; line-height: 1.25; }
+
+/* Botón de días: contorno, no relleno; no compite con las horas */
+.btn-dias, .manana { margin-top: 12px; }
+.btn-dias { display: flex; align-items: center; justify-content: space-between; min-height: var(--objetivo); padding: 0 16px 0 20px; border-radius: var(--radio); background: var(--superficie); border: 2px solid var(--acento); color: var(--acento); font-size: var(--t-dia); font-weight: 700; text-decoration: none; }
+
+/* Día: título sobre la superficie, una fila por marea, palabra SIEMPRE en la misma columna */
+.dia { background: var(--superficie); border-radius: var(--radio); overflow: clip; }
+.dia + .dia { margin-top: 12px; }
+.dia-nombre { padding: 14px 20px 6px; font-size: var(--t-dia); line-height: 1.25; }
+.dia-nombre b { font-weight: 800; }
+.dia-nombre span { color: var(--tinta-2); font-weight: 500; }
+.fila-m { display: grid; grid-template-columns: 1.75rem 1fr auto; align-items: center; column-gap: 10px; min-height: 3.5rem; padding: 4px 20px; }
+.fila-m + .fila-m { border-top: 1px solid var(--regla); }
+.fila-m .i { color: var(--acento); width: 1.75rem; height: 1.75rem; stroke-width: 2; }
+.fila-m .palabra { font-size: var(--t-fila); font-weight: 700; }
+.fila-m .h { display: flex; align-items: baseline; gap: 4px; justify-self: end; font-size: var(--t-hora-fila); font-weight: 800; white-space: nowrap; }
+.fila-m .h small { font-size: var(--t-sufijo); font-weight: 600; color: var(--tinta-2); }
+.dia ol { padding-bottom: 6px; }
+
+.mas { cursor: pointer; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: var(--objetivo); margin-top: 12px; padding: 0 16px 0 20px; border-radius: var(--radio); background: var(--superficie); border: 2px solid var(--acento); color: var(--acento); font: inherit; font-size: var(--t-dia); font-weight: 700; text-align: left; }
+
+.pie { padding: 22px 8px 8px; font-size: var(--t-pie); line-height: 1.4; color: var(--tinta-2); }
+.pie p + p { margin-top: 6px; }
+.pie .vigencia.pronto { font-weight: 700; color: var(--tinta); }   /* quedan 14 días o menos: más fuerte, sin rojo ni ícono */
+
+/* Estados sin horarios: misma superficie blanca que las mareas */
+.sin-mas { margin-top: 6px; font-size: 1.75rem; font-weight: 800; line-height: 1.15; }
+.proxima .cuerpo { margin-top: 6px; font-size: var(--t-apoyo); color: var(--tinta-2); line-height: 1.3; }
+.estado { background: var(--superficie); border-radius: var(--radio); padding: 24px 20px; }
+.estado h2 { font-size: var(--t-etiqueta); font-weight: 800; line-height: 1.2; }
+.estado p { margin-top: 8px; font-size: var(--t-apoyo); color: var(--tinta-2); line-height: 1.35; }
+
+/* Letra grande en pantalla angosta: una marea por renglón, sin partir la palabra; el símbolo y el sufijo bajan un poco */
+.app { container-type: inline-size; }
+.fila-m .palabra { white-space: nowrap; }
+@container (max-width: 22rem) {
+  .fila-m { grid-template-columns: 1.125rem 1fr auto; column-gap: 6px; padding: 4px 12px; }
+  .fila-m .i { width: 1.125rem; height: 1.125rem; }
+  .fila-m .palabra { font-size: 1.0625rem; }
+  .fila-m .h { font-size: 1.25rem; gap: 3px; }
+  .fila-m .h small { font-size: .875rem; }
+  .dia-nombre, .proxima, .direccion { padding-left: 16px; padding-right: 16px; }
+  .hora b { font-size: 3rem; }
+  .hora span { font-size: 1.125rem; }
+}

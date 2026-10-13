@@ -1,0 +1,34 @@
+/* Tokens · Mareas de la Finca · ronda 3 (05 Diseñador visual UI, 12 oct 2026)
+   Origen: azul marino #0b2d50 del ícono (CONTEXTO del cliente). Un solo tono de énfasis (#1556a0, azul del ícono
+   oscurecido para pasar 7:1). Se quitan verde y naranja: baja no es una advertencia. Alta y baja se distinguen por
+   la palabra y el símbolo (flecha arriba / flecha abajo en círculo), no por color.
+   Contrastes (WCAG 2.x): tinta/blanco 13,95 · tinta-2/blanco 8,32 · tinta-2/fondo 7,61 · acento/blanco 7,32. SOLO modo claro. */
+:root {
+  color-scheme: light;
+  --fondo:      #f2f5f9;   /* pantalla */
+  --superficie: #ffffff;   /* las únicas dos superficies: próximas y día */
+  --marino:     #0b2d50;   /* cabecera */
+  --tinta:      #0b2d50;   /* texto principal */
+  --tinta-2:    #34506f;   /* texto secundario */
+  --acento:     #1556a0;   /* símbolo y botón de días */
+  --cab-2:      #dce7f4;   /* texto secundario sobre marino · 11,15:1 */
+  --regla:      #c9d5e3;   /* filete (decorativo; el separador real es el espacio) */
+
+  --fuente: system-ui, Roboto, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --t-hora-grande: 3.5rem;
+  --t-sufijo-grande: 1.375rem;
+  --t-etiqueta: 1.375rem;
+  --t-apoyo: 1.25rem;
+  --t-direccion: 1.25rem;
+  --t-dia: 1.25rem;
+  --t-fila: 1.25rem;       /* "Marea alta" en la lista */
+  --t-hora-fila: 1.5rem;
+  --t-sufijo: 1rem;
+  --t-pie: 1.0625rem;
+  --t-titulo: 1.5rem;
+
+  --margen: 12px;
+  --pad: 16px;
+  --radio: 16px;
+  --objetivo: 3.5rem;
+}

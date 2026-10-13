@@ -1,75 +1,30 @@
-<!doctype html><html lang=es><head><meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name=theme-color content="#0b2d50"><meta name=apple-mobile-web-app-capable content=yes>
-<meta name=apple-mobile-web-app-title content="Mareas"><link rel=manifest href=manifest.webmanifest>
-<link rel=apple-touch-icon href=apple-touch-icon.png><title>Mareas de la Finca</title>
-<style>
-:root{--bg:#f2f6fa;--ink:#0b2d50;--mut:#5b7088;--card:#fff;--up:#0a8a4a;--dn:#d06a00;--blue:#1f6fc5}
-@media(prefers-color-scheme:dark){:root{--bg:#07192c;--ink:#e8f1fa;--mut:#8fa6bd;--card:#0f2a45}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.35 system-ui,-apple-system,sans-serif;padding:env(safe-area-inset-top) 0 40px}
-main{max-width:560px;margin:0 auto;padding:14px}h1{font-size:20px;margin:6px 0 2px}.sub{color:var(--mut);font-size:15px;margin-bottom:12px}
-.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,30,60,.12)}
-.now{text-align:center}.big{font-size:56px;font-weight:700;line-height:1}.state{font-size:26px;font-weight:700;margin-top:6px}.up{color:var(--up)}.dn{color:var(--dn)}
-.next{display:flex;gap:10px;margin-top:14px}.next div{flex:1;border-radius:14px;padding:12px;background:rgba(31,111,197,.10)}.next b{display:block;font-size:30px}.next small{color:var(--mut);font-size:15px}
-.nav{display:flex;align-items:center;gap:8px;margin-bottom:8px}.nav b{flex:1;text-align:center;font-size:20px;text-transform:capitalize}
-button{font:inherit;border:0;border-radius:14px;background:var(--blue);color:#fff;padding:10px 16px;min-width:52px}button.g{background:transparent;color:var(--blue);border:2px solid var(--blue)}
-canvas{width:100%;display:block;touch-action:pan-y}#rd{min-height:28px;font-weight:700;margin:2px 0 6px}
-.ev{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.ev span{padding:6px 10px;border-radius:12px;font-weight:700;font-size:17px}.P{background:rgba(10,138,74,.15);color:var(--up)}.B{background:rgba(208,106,0,.15);color:var(--dn)}
-.day{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid rgba(120,140,160,.25)}.day:last-child{border:0}.day small{color:var(--mut)}.sic{font-size:13px;background:var(--blue);color:#fff;border-radius:8px;padding:2px 7px;margin-left:6px;vertical-align:middle}
-.wx{display:flex;justify-content:space-between;text-align:center;font-size:15px}.wx b{display:block;font-size:20px}.foot{color:var(--mut);font-size:13px;text-align:center;margin-top:18px}
-table{width:100%;border-collapse:collapse;font-size:16px}td,th{padding:6px 4px;text-align:left;border-bottom:1px solid rgba(120,140,160,.2)}
-</style></head><body><main>
-<h1>🌊 Mareas de la Finca</h1><div class=sub id=hoy></div>
-<div class="card now"><div class=sub>Nivel ahora</div><div class=big id=nv>--</div><div class=state id=st></div>
-<div class=next><div><small>Próxima pleamar</small><b id=np>--</b><small id=npm></small></div><div><small>Próxima bajamar</small><b id=nb>--</b><small id=nbm></small></div></div></div>
-<div class=card id=wxc style=display:none><b>Clima</b><div class=wx id=wx></div></div>
-<div class=card><div class=nav><button class=g id=pd>◀</button><b id=fd></b><button class=g id=nd2>▶</button></div>
-<div id=rd></div><canvas id=c height=260></canvas><div class=ev id=evs></div>
-<details style=margin-top:12px><summary style=color:var(--blue);font-weight:700>Ver hora por hora</summary><table id=tb></table></details></div>
-<div class=card><b>Próximos 7 días</b><div id=wk></div></div>
-<div class=foot>Predicción modelada, no oficial. No usar para navegar.<br><span id=ver></span></div></main>
-<script src=data.js></script><script>
-const S=new Date(D.start+'T00:00:00Z'),N=D.y.length/48,DN=['dom','lun','mar','mié','jue','vie','sáb'],MN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const P2=n=>String(n).padStart(2,'0'),hm=m=>P2(Math.floor(m/60))+':'+P2(m%60);
-function hn(){return new Date(Date.now()-6*36e5)} // hora de Honduras (UTC-6) en campos UTC
-const nowMin=()=>(hn()-S)/6e4; // minutos desde inicio
-function yAtM(m){const f=m/30,i=Math.max(0,Math.min(D.y.length-2,Math.floor(f))),k=Math.max(0,Math.min(1,f-i));return D.y[i]+(D.y[i+1]-D.y[i])*k}
-const evs=D.ev.map(([t,k,v])=>({m:(new Date(t+'Z')-S)/6e4,k,v}));
-const dstr=d=>DN[d.getUTCDay()]+' '+d.getUTCDate()+' '+MN[d.getUTCMonth()];
-const dayDate=i=>new Date(S.getTime()+i*864e5);
-const todayI=()=>Math.floor(nowMin()/1440);let cd=Math.max(0,Math.min(N-1,todayI()));
-const rel=m=>{const h=Math.floor(m/60),mm=Math.round(m%60);return 'en '+(h?h+' h ':'')+mm+' min'};
-function inRange(){const m=nowMin();return m>=0&&m<N*1440}
-function actual(){const m=nowMin();document.getElementById('hoy').textContent=(inRange()?dstr(hn())+' · '+hm(hn().getUTCHours()*60+hn().getUTCMinutes()):'Fuera del rango de datos');
- if(!inRange()){return}
- const y=yAtM(m),up=yAtM(m+20)>=y;nv.textContent=y.toFixed(2)+' m';st.innerHTML=up?'<span class=up>▲ Subiendo</span>':'<span class=dn>▼ Bajando</span>';
- const nx=k=>evs.find(e=>e.k==k&&e.m>m);const p=nx('P'),b=nx('B');
- if(p){np.textContent=hm(Math.round(p.m%1440));npm.textContent=rel(p.m-m)+' · '+p.v.toFixed(1)+' m'}if(b){nb.textContent=hm(Math.round(b.m%1440));nbm.textContent=rel(b.m-m)+' · '+b.v.toFixed(1)+' m'}}
-const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n);
-function draw(hov){const r=devicePixelRatio||1,w=c.clientWidth,h=260;c.width=w*r;c.height=h*r;const x=c.getContext('2d');x.scale(r,r);x.font='12px system-ui';
- const L=36,B=24,T=12,mn=-1.4,mx=2.2,X=m=>L+m/1440*(w-L-8),Y=v=>T+(mx-v)/(mx-mn)*(h-T-B),base=cd*1440,ink=css('--ink'),mut=css('--mut');
- fd.textContent=dstr(dayDate(cd));
- for(let m=0;m<1440;m+=30){const a=yAtM(base+m),b=yAtM(base+m+30);x.fillStyle=b>=a?'rgba(10,138,74,.12)':'rgba(208,106,0,.12)';x.fillRect(X(m),T,X(m+30)-X(m),h-T-B)}
- for(let v=-1;v<=2;v++){x.strokeStyle='rgba(120,140,160,.3)';x.beginPath();x.moveTo(L,Y(v));x.lineTo(w-8,Y(v));x.stroke();x.fillStyle=mut;x.fillText(v+'m',2,Y(v)+4)}
- for(let hr=0;hr<=24;hr+=4){x.fillStyle=mut;x.fillText(P2(hr)+'h',X(hr*60)-8,h-6)}
- x.beginPath();x.lineWidth=3;x.strokeStyle=css('--blue');for(let m=0;m<=1439;m+=6){const p=yAtM(base+m);m?x.lineTo(X(m),Y(p)):x.moveTo(X(m),Y(p))}x.stroke();
- if(cd==todayI()){const m=nowMin()-base;x.strokeStyle='#d33';x.lineWidth=2;x.setLineDash([4,4]);x.beginPath();x.moveTo(X(m),T);x.lineTo(X(m),h-B);x.stroke();x.setLineDash([])}
- const de=evs.filter(e=>e.m>=base&&e.m<base+1440);de.forEach(e=>{x.fillStyle=e.k=='P'?'#0a8a4a':'#d06a00';x.beginPath();x.arc(X(e.m-base),Y(e.v),5,0,7);x.fill()});
- evs_.innerHTML=de.map(e=>`<span class=${e.k}>${e.k=='P'?'Pleamar':'Bajamar'} ${hm(Math.round(e.m-base))}</span>`).join('');
- if(hov!=null){const m=Math.max(0,Math.min(1439,hov)),p=yAtM(base+m),u=yAtM(base+m+20)>=p;x.strokeStyle=ink;x.lineWidth=1;x.beginPath();x.moveTo(X(m),T);x.lineTo(X(m),h-B);x.stroke();x.fillStyle=ink;x.beginPath();x.arc(X(m),Y(p),5,0,7);x.fill();
-  rd.innerHTML=hm(Math.round(m))+' · '+p.toFixed(2)+' m · '+(u?'<span class=up>▲ sube</span>':'<span class=dn>▼ baja</span>')}else rd.textContent='Toca la curva para ver una hora';
- let t='<tr><th>Hora<th>Nivel<th></tr>';for(let hr=0;hr<24;hr++){const p=yAtM(base+hr*60),q=yAtM(base+hr*60+60);t+=`<tr><td>${P2(hr)}:00<td>${p.toFixed(2)} m<td class=${q>=p?'up':'dn'}>${q>=p?'▲ sube':'▼ baja'}</tr>`}tb.innerHTML=t}
-const evs_=document.getElementById('evs'),c=document.getElementById('c');
-const mv=e=>{const b=c.getBoundingClientRect(),t=(e.touches?e.touches[0].clientX:e.clientX)-b.left;draw((t-36)/(b.width-44)*1440)};
-c.addEventListener('mousemove',mv);c.addEventListener('touchstart',mv,{passive:true});c.addEventListener('touchmove',mv,{passive:true});c.addEventListener('mouseleave',()=>draw());
-pd.onclick=()=>{cd=Math.max(0,cd-1);draw()};nd2.onclick=()=>{cd=Math.min(N-1,cd+1);draw()};
-function week(){const a=[];for(let d=0;d<N;d++){const s=D.y.slice(d*48,d*48+48);a.push(Math.max(...s)-Math.min(...s))}const so=[...a].sort((x,y)=>x-y),hi=so[Math.floor(N*.75)];
- let h='';for(let i=Math.max(0,todayI());i<Math.min(N,todayI()+7);i++){const de=evs.filter(e=>e.m>=i*1440&&e.m<i*1440+1440);
-  h+=`<div class=day onclick="cd=${i};draw();scrollTo(0,0)"><div><b>${dstr(dayDate(i))}</b>${a[i]>=hi?'<span class=sic>mareas grandes</span>':''}<br><small>${de.map(e=>(e.k=='P'?'▲':'▼')+hm(Math.round(e.m-i*1440))).join('  ')}</small></div><div><small>${a[i].toFixed(1)} m</small></div></div>`}wk.innerHTML=h||'<small>Sin datos</small>'}
-ver.textContent='Datos hasta '+dstr(dayDate(N-1));
-function all(){actual();week();draw()}addEventListener('resize',()=>draw());all();setInterval(actual,60000);
-// clima (opcional, solo con internet)
-fetch('https://api.open-meteo.com/v1/forecast?latitude=13.42&longitude=-87.45&daily=temperature_2m_max,precipitation_sum,wind_speed_10m_max&timezone=America%2FTegucigalpa&forecast_days=3').then(r=>r.json()).then(j=>{const d=j.daily;wxc.style.display='';
- wx.innerHTML=d.time.map((t,i)=>`<div>${i?DN[new Date(t+'T12:00:00Z').getUTCDay()]:'hoy'}<b>${Math.round(d.temperature_2m_max[i])}°</b>🌧 ${d.precipitation_sum[i]} mm<br>💨 ${Math.round(d.wind_speed_10m_max[i])} km/h</div>`).join('')}).catch(()=>{});
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-</script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0b2d50">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mareas">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Mareas de la Finca</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app" id="app">
+<header class="barra" id="cab"></header>
+<main>
+<div id="r1"></div>
+<div id="r2"></div>
+</main>
+</div>
+<noscript><div class="app"><header class="barra"><h1 class="nombre">Mareas de la Finca</h1></header><main><section class="estado" role="note"><h2>No se pudieron mostrar los horarios</h2><p>Cerrar la app y abrirla otra vez. Si sigue igual, pedir que la actualicen.</p></section></main></div></noscript>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
