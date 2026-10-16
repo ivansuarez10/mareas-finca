@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es-HN" data-tinta="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b3b40">
+<title>Mareas de la Finca</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fuentes/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="mareas-cristal.css">
+<link rel="stylesheet" href="cristal-liquido.css">
+<link rel="stylesheet" href="clima-fondo.css">
+<link rel="stylesheet" href="clima-tinte.css">
+<!-- PRUEBA (retirar al integrar, ver INTEGRACION.md): ?tinta=claro|oscuro  ?letra=100|130|150  ?sinblur=1 (fuerza el fallback sólido). Va en el head para aplicarse antes del primer pintado. -->
+<script>try{var q=new URLSearchParams(location.search),r=document.documentElement,t=q.get('tinta'),l=+q.get('letra');
+if(t==='claro'||t==='oscuro')r.dataset.tinta=t;if(l>=100&&l<=160)r.style.fontSize=l+'%';if(q.get('sinblur')==='1')r.dataset.sinBlur=''}catch(e){}</script>
+<!-- FIN PRUEBA -->
+</head>
+<body>
+<div id="app" class="app"><noscript><p style="padding:1.5rem;font:400 1.25rem sans-serif">Esta app necesita JavaScript para mostrar las mareas.</p></noscript></div>
+<script src="data.js"></script>
+<script src="datos-vivos.js"></script>
+<script src="mareas-cristal.js"></script>
+<script src="cristal-liquido.js"></script>
+<script src="clima-paletas.js"></script>
+<script src="clima-fondo.js"></script>
+<script src="clima-vivo.js"></script>
+<script src="app.js"></script>
+<!-- PRUEBA (retirar al integrar, ver INTEGRACION.md): ?clima=dia-lluvia  ?estilo=a|b  ?selector=1 -->
+<script src="clima-prueba.js"></script>
+<!-- FIN PRUEBA -->
+</body>
+</html>

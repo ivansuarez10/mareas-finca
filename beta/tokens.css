@@ -1,0 +1,48 @@
+/* Tokens de "Cristal sobre agua" (05, ronda 5). Una sola tipografía, Figtree (local, variable 300-900).
+   Pesos usados: 300 (cifras y títulos grandes), 400 (texto), 500 (rótulos y pestaña activa). Nunca 200, nunca 600+.
+   Tamaños en rem: crecen con la letra del teléfono (100/130/150 %). */
+@font-face { font-family: Figtree; src: url(fuentes/figtree-latin.woff2) format('woff2'); font-weight: 300 900; font-display: swap; }
+
+:root {
+  --font: Figtree, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --r: 28px;                  /* radio del panel de cristal */
+  --r-sm: 16px;               /* botones de contorno */
+  --tap: min(3.5rem, 64px);    /* 56 px a 100 %, crece con la letra hasta 64 px (más alto se come la pantalla) */
+  --margen: 12px;             /* aire entre el cristal y el borde de la pantalla */
+  --sobre: 40px;              /* el fondo y su copia desenfocada sobrepasan la pantalla: el blur no se desvanece en el borde */
+  --banda: max(150px, 20cqh);             /* ronda 7: cielo libre mínimo sobre el panel (el fondo vivo se lee ahí) */
+  --blur: 22px;               /* desenfoque ESTÁTICO de la copia del fondo (se rasteriza una vez; nunca se anima) */
+}
+
+/* ---------- FONDO (ronda 7): cielo vivo. clima-vivo.js escribe --cielo (el degradado del estado de ahora) en <html>; la copia desenfocada del cristal (.vf) usa EXACTAMENTE el mismo.
+   Sin JS o sin clima: el degradado de abajo (día despejado). El tinte de cada estado vive en clima-tinte.css (generado por herramientas-09/generar-tinte.mjs). ---------- */
+:root { --fondo: var(--cielo, linear-gradient(180deg, #3e85cf 0%, #7cb0e3 46%, #c3e0f2 100%)); }
+
+/* ---------- TINTA (polaridad del texto). Por defecto, texto oscuro sobre cristal claro: la que mejor se lee al sol. ----------
+   El contraste lo GARANTIZA el tinte, no el fondo: ver notas-prototipador.md (peor píxel medido en los 28 estados con el cristal líquido real). */
+:root, [data-tinta="claro"] {
+  /* ronda 7: el color y el alfa del tinte los fija el estado (--vid-rgb, --vid-alfa en clima-tinte.css). Sin estado: 72 %, como la ronda 6. */
+  --vid: rgba(var(--vid-rgb, 255, 251, 246), var(--vid-alfa, .72));            /* tinte del cristal (centro, total) */
+  --vid-borde: rgba(var(--vid-rgb, 255, 251, 246), var(--vid-b, .30));                      /* ronda 6: tinte del bisel, donde el fondo se dobla (ninguna letra llega ahí) */
+  --vid-centro: rgba(var(--vid-rgb, 255, 251, 246), calc(1 - (1 - var(--vid-alfa, .72)) / (1 - var(--vid-b, .30))));   /* sobre el .30 de abajo suma --vid-alfa en el centro */
+  --tx: #0A2830;                            /* texto principal: 7:1 o más aun sobre foto negra */
+  --tx2: #1B363E;                           /* texto de apoyo: AA aun sobre foto negra */
+  --linea: rgba(10, 40, 48, .16);           /* hairline */
+  --borde: rgba(255, 255, 255, .6);         /* borde 1 px del cristal */
+  --sombra: 0 14px 44px rgba(10, 30, 40, .16);
+  --sube: #165A42; --baja: #84380A;         /* ronda 7 (05): más oscuros que los de la ronda 6 para pasar 4,5:1 bajo el cristal de noche y tormenta. Sin color como único portador: flecha y texto */
+  --boton: rgba(10, 40, 48, .34);
+  --area: rgba(22, 90, 66, .22);
+}
+[data-tinta="oscuro"] {
+  --vid: rgba(6, 22, 28, .73);
+  --vid-borde: rgba(6, 22, 28, .34);
+  --vid-centro: rgba(6, 22, 28, .59);       /* suma 73 % con el borde (1 - .66 x .41) */
+  --tx: #FFFFFF; --tx2: #E3EEF0;
+  --linea: rgba(255, 255, 255, .2);
+  --borde: rgba(255, 255, 255, .22);
+  --sombra: 0 14px 44px rgba(0, 0, 0, .28);
+  --sube: #8FDDBF; --baja: #F6B98A;
+  --boton: rgba(255, 255, 255, .42);
+  --area: rgba(143, 221, 191, .2);
+}

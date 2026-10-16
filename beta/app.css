@@ -1,0 +1,185 @@
+/* Mareas de la Finca · piel "Cristal sobre agua" (05 diseño, 09 prototipo, ronda 5).
+   Cristal HORNEADO: el panel no usa backdrop-filter. Lleva una copia del mismo fondo (.vf), alineada con la pantalla,
+   desenfocada UNA vez (filter estático, sin animar) y cubierta por un tinte que garantiza el contraste.
+   Si el navegador no sabe desenfocar, el tinte solo (72 % opaco) ya se ve igual de calmado: es el fallback. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--font); font-weight: 400; color: var(--tx); background: #0d1d22; min-height: 100dvh; }
+button { font: inherit; color: inherit; }
+.ic { width: 1.25em; height: 1.25em; flex: none; vertical-align: -.2em; }
+.ic path, .ic circle, .ic rect { stroke-width: 1.6; }
+
+/* ---------- pantalla ---------- */
+.app { position: relative; width: min(100%, 440px); height: 100dvh; margin: 0 auto; overflow: hidden; container-type: size; isolation: isolate; }
+.fondo, .vf { position: absolute; background: var(--fondo); }
+.fondo { inset: calc(-1 * var(--sobre)); }
+@media (min-width: 700px) {
+  body { display: grid; place-items: center; background: #0d1d22; }
+  .app { height: min(calc(100dvh - 48px), 900px); border-radius: 40px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+}
+
+/* ---------- el panel de cristal: UNO por pantalla ---------- */
+/* RONDA 6: la barra Hoy · Curva · Días sale del panel y es su propia píldora de cristal (.barra) debajo de él. .pila las apila abajo.
+   --barra-h (alto de la píldora) lo mide app.js; sirve para el tope del panel y para alinear la copia horneada del fondo (--bo). */
+.pila { --barra-h: calc(var(--tap) + 8px); --hueco: 8px; position: absolute; left: var(--margen); right: var(--margen); bottom: var(--margen); display: flex; flex-direction: column; gap: var(--hueco); max-height: calc(100cqh - var(--margen) * 2); pointer-events: none; }
+.pila > * { pointer-events: auto; }
+.panel { --bo: calc(var(--margen) + var(--barra-h) + var(--hueco)); position: relative; flex: 0 1 auto; min-height: 0;
+  display: flex; flex-direction: column; border-radius: var(--r); }
+/* RONDA 7 (H1 del QA): siempre queda una banda de cielo libre arriba (--banda, 140 px; en 360x800 a letra 150 % es el 17 %); si el contenido no cabe, el panel se desliza por dentro (.cont) y la barra sigue a la vista. La lluvia, las estrellas y la bruma viven en esa banda. */
+.panel.hoy { max-height: min(calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)), max(calc(74cqh - var(--barra-h)), 36rem)); }
+.panel.alta { height: calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)); }
+.panel:not(.hoy):not(.alta) { max-height: calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)); }
+.vidrio { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; box-shadow: var(--sombra); z-index: 0; }
+/* la copia del fondo: mismo tamaño y misma esquina que .fondo, colocada respecto al panel (que está a --margen de los bordes) */
+.vf { left: calc(-1 * (var(--margen) + var(--sobre))); bottom: calc(-1 * (var(--bo, var(--margen)) + var(--sobre)));
+  width: calc(100cqw + var(--sobre) * 2); height: calc(100cqh + var(--sobre) * 2);
+  filter: blur(var(--blur)) saturate(1.12); }
+.tinte { position: absolute; inset: 0; background: var(--vid); border-radius: inherit; box-shadow: inset 0 0 0 1px var(--borde); }
+/* FALLBACK SÓLIDO (mismo tono, mismo borde, mismo texto; solo desaparece la foto desenfocada detrás):
+   "reducir transparencia" del sistema, navegador sin unidades de contenedor (la copia no se alinearía) y ?sinblur=1 (QA). */
+@media (prefers-reduced-transparency: reduce) { .vf { display: none; } .tinte { background: var(--vid-solido); } }
+@supports not (width: 1cqw) { .vf { display: none; } .tinte { background: var(--vid-solido); } }
+[data-sin-blur] .vf { display: none; }
+[data-sin-blur] .tinte { background: var(--vid-solido); }
+.cont { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1.5rem 1.5rem 1.75rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(#000 calc(100% - 1.75rem), transparent); mask-image: linear-gradient(#000 calc(100% - 1.75rem), transparent); }
+.cont::-webkit-scrollbar { display: none; }
+.pie { position: relative; z-index: 1; padding: 0 1.5rem 1.25rem; }   /* ronda 6: el bisel inferior (18 px) no pisa la última línea */
+.pie:empty { display: none; }
+.pie .fresco { margin: .5rem 0 0; }
+.cont:focus-visible { outline: 2px solid var(--tx); outline-offset: -4px; border-radius: var(--r); }
+
+/* ---------- barra de pestañas: texto sobre el mismo cristal, sin caja oscura ---------- */
+.barra { container-type: inline-size; flex: none; --cl-radio: 999px; border-radius: 999px; }
+.barra .cl__contenido { display: flex; padding: 4px 12px; }   /* 12 px a cada lado: las etiquetas quedan lejos del bisel que dobla la foto */
+.barra a { flex: 1; min-height: var(--tap); display: flex; align-items: center; justify-content: center; gap: .5rem; color: var(--tx2); text-decoration: none; font-size: 1rem; font-weight: 400; border-radius: var(--r-sm); }
+.barra a span { text-underline-offset: .45rem; text-decoration-thickness: 2px; }
+.barra a[aria-current="page"] { color: var(--tx); font-weight: 500; }
+.barra a[aria-current="page"] span { text-decoration-line: underline; }
+.barra a:focus-visible, .mas:focus-visible, .controles button:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; }
+
+@container (max-width: 22rem) { .barra a { flex-direction: column; gap: .1rem; padding: .35rem 0; } .barra .ic { width: 1.5rem; height: 1.5rem; } }   /* letra 130 % o más: ícono arriba, palabra abajo */
+
+/* ---------- CRISTAL LÍQUIDO (ronda 6): cristal-liquido.js dobla la foto solo en el bisel. El centro lleva el tinte de la ronda 5 (el contraste lo fija el tinte, no la foto).
+   Tinte en dos zonas: centro = --vid (igual que la ronda 5, 72 %), bisel = --vid-borde (ligero, para que la refracción se vea). Ninguna letra pisa el bisel. ---------- */
+.barra, .vidrio { --cl-tinte: var(--vid); --cl-tinte-solido: var(--vid-solido); --cl-sombra: var(--sombra); --cl-borde-luz: var(--borde); --cl-borde-sombra: var(--linea); --cl-sat: 1.1; }
+.vidrio.cl { position: absolute; inset: 0; overflow: hidden; }
+.vidrio.cl .cl__contenido { display: none; }
+.cl .cl__tinte { background: var(--vid-borde); }   /* con .cl delante gana a cristal-liquido.css, que se carga después */
+.cl .cl__tinte::before { content: ""; position: absolute; inset: var(--ti, 4px); border-radius: inherit; background: var(--vid-centro);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent), linear-gradient(0deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent);
+  -webkit-mask-composite: source-in;
+  mask: linear-gradient(90deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent), linear-gradient(0deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent);
+  mask-composite: intersect; }
+.barra { --ti: 3px; --tp: 9px; }
+.vidrio { --ti: 4px; --tp: 16px; }
+@media (prefers-reduced-transparency: reduce) { .cl .cl__tinte { background: var(--vid-solido); } .cl .cl__tinte::before { display: none; } }
+/* ronda 6 (H4): camino sólido forzado (sin backdrop-filter): la barra toma el tono compuesto del panel horneado (72 % de tinte sobre la foto), no el plano #FFFBF6 / #14303A.
+   Con "reducir transparencia" real, panel y barra son ambos --vid-solido (la regla de abajo lo restituye). */
+.barra.cl--solido { --cl-tinte-solido: rgb(212, 200, 197); }
+[data-tinta="oscuro"] .barra.cl--solido { --cl-tinte-solido: rgb(30, 34, 37); }
+@media (prefers-reduced-transparency: reduce) { .barra.cl--solido, [data-tinta="oscuro"] .barra.cl--solido { --cl-tinte-solido: var(--vid-solido); } }
+
+/* ---------- cabecera dentro del panel ---------- */
+.cab h1 { margin: 0; font-size: 1rem; font-weight: 500; color: var(--tx2); letter-spacing: .01em; }
+.cab #fecha { display: block; margin-top: .15rem; font-size: 1rem; font-weight: 400; color: var(--tx2); }
+
+/* ---------- Hoy ---------- */
+.estado { display: flex; align-items: center; gap: .6rem; margin: 1.1rem 0 0; font-size: 1.25rem; font-weight: 400; line-height: 1.25; }
+.flecha { display: inline-flex; color: var(--sube); }
+.flecha[data-k="B"] { color: var(--baja); }
+.flecha .ic { width: 1.5rem; height: 1.5rem; }
+.estado .flecha .ic { width: 1.75rem; height: 1.75rem; }
+.estado .flecha .ic path { stroke-width: 1.5; }
+.rot { margin: 0; font-size: 1.125rem; font-weight: 500; color: var(--tx); }   /* rótulos: texto principal (meta 7:1) */
+.hero { margin-top: 1.1rem; }
+.gran, .med { margin: .1rem 0 0; font-weight: 300; letter-spacing: -.025em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gran { font-size: min(4.5rem, 19cqw); }   /* la hora grande no crece más que el ancho: 'a. m.' nunca se corta */
+.med { font-size: max(44px, min(2.75rem, 12cqw)); letter-spacing: -.02em; }
+.gran small, .med small { font-size: .32em; font-weight: 400; letter-spacing: 0; color: var(--tx2); }
+.med small { font-size: .42em; }
+.cuenta { margin: .5rem 0 0; font-size: 1.25rem; font-weight: 400; }
+.seg { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--linea); }
+.fresco { display: flex; align-items: center; gap: .55rem; margin: 1.1rem 0 0; font-size: 1rem; color: var(--tx2); line-height: 1.35; }
+.fresco .ic { width: 1.25rem; height: 1.25rem; }
+.punto { width: .55rem; height: .55rem; margin: 0 .35rem; flex: none; border-radius: 50%; background: var(--sube); }
+.aviso, .fuente, .vigencia, .nueva { margin: .6rem 0 0; font-size: 1rem; color: var(--tx2); line-height: 1.4; }
+.fuente { font-size: 1rem; }
+.acerca { margin-top: .25rem; }
+.acerca summary { display: flex; align-items: center; justify-content: space-between; min-height: var(--tap); font-size: 1rem; color: var(--tx); cursor: pointer; list-style: none; }
+.acerca summary::-webkit-details-marker { display: none; }
+.acerca summary .ic { transition: transform .15s; }
+.acerca[open] summary .ic { transform: rotate(90deg); }
+.acerca summary:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; border-radius: var(--r-sm); }
+.acerca[open] { padding-bottom: .5rem; }
+.credito { margin: .6rem 0 0; font-size: 1rem; color: var(--tx2); line-height: 1.4; }
+.credito a { color: var(--tx); text-underline-offset: .2em; display: inline-block; padding: .55rem 0; }
+.credito a:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; }
+.vigencia { display: flex; gap: .5rem; }
+.nueva { color: var(--tx); font-weight: 500; }
+.gira { animation: gira 1.6s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* ---------- títulos de vista y cajas de fin ---------- */
+.tit { margin: 1.1rem 0 .25rem; font-size: min(1.75rem, 30px); font-weight: 300; letter-spacing: -.01em; line-height: 1.15; }
+.finbox { display: flex; gap: .9rem; margin-top: 1.5rem; align-items: flex-start; }
+.finbox .ic { width: 1.75rem; height: 1.75rem; margin-top: .15rem; color: var(--tx2); }
+.finbox h2 { margin: 0; font-size: 1.5rem; font-weight: 300; line-height: 1.2; }
+.finbox p { margin: .4rem 0 0; font-size: 1.125rem; line-height: 1.4; }
+
+/* ---------- Curva ---------- */
+.lectura { display: flex; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; min-height: 4.5rem; margin-top: .75rem; }
+.l-hora { font-size: min(2.75rem, 52px); font-weight: 300; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.l-hora small { font-size: .4em; font-weight: 400; color: var(--tx2); }
+.l-alt { font-size: 1.25rem; color: var(--tx2); }
+.l-alt:empty { display: none; }
+.l-dir { display: inline-flex; align-items: center; gap: .3rem; font-size: 1.25rem; }
+.graf { margin: .25rem -.25rem 0; position: relative; touch-action: pan-y; }
+.curva { display: block; max-width: 100%; overflow: visible; cursor: ew-resize; touch-action: pan-y; outline-offset: 4px; }
+.curva:focus:not(:focus-visible) { outline: none; }
+.c-area { fill: url(#g-area); }
+.c-line { fill: none; stroke: var(--tx); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.c-hora { fill: var(--tx); font-weight: 400; }
+.c-hora .ap, .c-hora .c-pal { fill: var(--tx2); }
+.c-tick { fill: var(--tx2); font-weight: 400; }
+.c-tk { stroke: var(--tx2); stroke-width: 1; stroke-dasharray: 2 5; opacity: .5; }
+.c-ev { fill: var(--vid-solido, #fff); stroke: var(--tx); stroke-width: 1.5; }
+.c-now-l { stroke: var(--tx); stroke-width: 1; stroke-dasharray: 3 5; opacity: .55; }
+.c-now { fill: var(--tx); stroke: var(--vid-solido, #fff); stroke-width: 3; }
+.c-cur-l { stroke: var(--tx); stroke-width: 1.5; }
+.c-cur-p { fill: var(--vid-solido, #fff); stroke: var(--tx); stroke-width: 2.5; }
+.mv-halo { position: absolute; width: 2.25rem; height: 2.25rem; margin: -1.125rem 0 0 -1.125rem; border-radius: 50%; background: var(--tx); opacity: .14; pointer-events: none; }
+[data-tinta="claro"] { --vid-solido: #FFFBF6; }
+[data-tinta="oscuro"] { --vid-solido: #14303A; }
+.controles { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .5rem; }
+.controles button, .mas { flex: 1 1 9.5rem; min-height: var(--tap); display: inline-flex; align-items: center; justify-content: center; gap: .3rem; padding: 0 .5rem; background: transparent; white-space: nowrap; border: 1px solid var(--boton); border-radius: var(--r-sm); font-size: 1rem; font-weight: 400; cursor: pointer; }
+.controles button { min-height: min(var(--tap), 52px); }   /* ronda 6 (H3): a letra 150 % los dos botones ocupan menos y "Hora siguiente" queda sobre el desvanecido */
+.mas { width: 100%; margin-top: 1.25rem; }
+.controles button:active, .mas:active { background: var(--linea); }
+
+/* ---------- Días ---------- */
+.dia { margin-top: 1.25rem; }
+.dia + .dia { padding-top: 1.25rem; border-top: 1px solid var(--linea); }   /* un solo divisor, entre días */
+.dia h2 { margin: 0; font-size: 1.5rem; font-weight: 300; line-height: 1.2; }
+.d-f { font-size: 1rem; font-weight: 400; color: var(--tx2); margin-left: .35rem; }
+.lista { list-style: none; margin: .5rem 0 0; padding: 0; }
+.f-txt { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 .75rem; min-height: 3.5rem; }   /* a letra grande la hora baja a otra línea en vez de cortarse */
+.fila .flecha { margin-right: .65rem; }
+.fila { display: flex; align-items: center; }
+.f-txt { flex: 1; }
+.f-rot { font-size: 1.125rem; font-weight: 400; flex: 1 1 6.5rem; }
+.f-hora { font-size: 1.75rem; font-weight: 300; letter-spacing: -.015em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.f-hora small { font-size: 1rem; font-weight: 400; color: var(--tx2); }
+.fila.pasada .f-rot, .fila.pasada .f-hora { color: var(--tx2); }
+.fila.pasada .flecha { color: var(--tx2); }
+.fila.sig .f-rot { font-weight: 500; }
+.fila.sig .f-hora { font-weight: 400; }
+
+/* ---------- apertura: la tarjeta del nombre arranca invisible; el movimiento (entrada, latido, halo) vive en mareas-cristal.css ---------- */
+.apertura { --bo: 44cqh; position: absolute; left: var(--margen); right: var(--margen); bottom: var(--bo); z-index: 3; text-align: center; padding: 1.75rem 1.5rem; border-radius: var(--r); pointer-events: none; opacity: 0; }
+.apertura > b, .apertura > span { position: relative; z-index: 1; display: block; }
+.apertura b { font-size: 2rem; font-weight: 300; letter-spacing: -.01em; line-height: 1.15; }
+.apertura span { margin-top: .5rem; font-size: 1.25rem; font-weight: 400; color: var(--tx2); }
+@media (prefers-reduced-motion: reduce) { .gira { animation: none; } }
+
+/* teléfonos cortos (360×800): menos aire arriba */
+@media (max-height: 760px) { .gran { font-size: min(4rem, 19cqw); } .hero { margin-top: 1.1rem; } .estado { margin-top: 1rem; } }

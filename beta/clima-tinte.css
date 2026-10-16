@@ -1,0 +1,33 @@
+/* Tinte del cristal por estado (05 propuso; 09 midio con el cristal liquido real; rondas 7 y 8). Generado por herramientas-09/generar-tinte8.mjs; no editar a mano.
+   Uso: <html data-clima="dia-lluvia">. Lo escribe clima-vivo.js; con clima caduco o sin clima, el cielo neutro usa el tinte del "<momento>-despejado".
+   Ronda 8: 29 estados. "dia-solfuerte" lo pone clima-vivo.js cuando el motor avisa solIntenso (cristal blanco azulado frio, mismo alfa).
+   Una sola polaridad de texto (tinta oscura). Los alfas son el TOTAL en el centro del panel (ver --vid-centro en tokens.css). */
+[data-clima="amanecer-despejado"] { --vid-rgb: 246, 240, 236; --vid-alfa: 0.73; }
+[data-clima="amanecer-parcial"] { --vid-rgb: 246, 240, 236; --vid-alfa: 0.73; }
+[data-clima="amanecer-nublado"] { --vid-rgb: 246, 240, 236; --vid-alfa: 0.73; }
+[data-clima="amanecer-llovizna"] { --vid-rgb: 240, 238, 238; --vid-alfa: 0.73; }
+[data-clima="amanecer-lluvia"] { --vid-rgb: 240, 238, 238; --vid-alfa: 0.73; }
+[data-clima="amanecer-tormenta"] { --vid-rgb: 240, 238, 238; --vid-alfa: 0.77; }
+[data-clima="amanecer-niebla"] { --vid-rgb: 246, 240, 236; --vid-alfa: 0.73; }
+[data-clima="dia-despejado"] { --vid-rgb: 248, 245, 239; --vid-alfa: 0.73; }
+[data-clima="dia-parcial"] { --vid-rgb: 248, 245, 239; --vid-alfa: 0.73; }
+[data-clima="dia-nublado"] { --vid-rgb: 248, 245, 239; --vid-alfa: 0.73; }
+[data-clima="dia-llovizna"] { --vid-rgb: 241, 241, 239; --vid-alfa: 0.73; }
+[data-clima="dia-lluvia"] { --vid-rgb: 241, 241, 239; --vid-alfa: 0.73; }
+[data-clima="dia-tormenta"] { --vid-rgb: 241, 241, 239; --vid-alfa: 0.755; }
+[data-clima="dia-niebla"] { --vid-rgb: 248, 245, 239; --vid-alfa: 0.73; }
+[data-clima="atardecer-despejado"] { --vid-rgb: 245, 236, 232; --vid-alfa: 0.73; }
+[data-clima="atardecer-parcial"] { --vid-rgb: 245, 236, 232; --vid-alfa: 0.73; }
+[data-clima="atardecer-nublado"] { --vid-rgb: 245, 236, 232; --vid-alfa: 0.73; }
+[data-clima="atardecer-llovizna"] { --vid-rgb: 239, 236, 235; --vid-alfa: 0.73; }
+[data-clima="atardecer-lluvia"] { --vid-rgb: 239, 236, 235; --vid-alfa: 0.745; }
+[data-clima="atardecer-tormenta"] { --vid-rgb: 239, 236, 235; --vid-alfa: 0.78; }
+[data-clima="atardecer-niebla"] { --vid-rgb: 245, 236, 232; --vid-alfa: 0.73; }
+[data-clima="noche-despejado"] { --vid-rgb: 221, 228, 234; --vid-alfa: 0.84; --vid-b: .42; }
+[data-clima="noche-parcial"] { --vid-rgb: 221, 228, 234; --vid-alfa: 0.835; --vid-b: .42; }
+[data-clima="noche-nublado"] { --vid-rgb: 221, 228, 234; --vid-alfa: 0.84; --vid-b: .42; }
+[data-clima="noche-llovizna"] { --vid-rgb: 215, 223, 230; --vid-alfa: 0.865; --vid-b: .42; }
+[data-clima="noche-lluvia"] { --vid-rgb: 215, 223, 230; --vid-alfa: 0.87; --vid-b: .42; }
+[data-clima="noche-tormenta"] { --vid-rgb: 215, 223, 230; --vid-alfa: 0.87; --vid-b: .42; }
+[data-clima="noche-niebla"] { --vid-rgb: 221, 228, 234; --vid-alfa: 0.83; --vid-b: .42; }
+[data-clima="dia-solfuerte"] { --vid-rgb: 233, 239, 244; --vid-alfa: 0.73; }
