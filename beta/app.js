@@ -10,7 +10,7 @@
 
 const NB = '\u00a0';
 const T = {
-  nombre: 'Mareas de la Finca', P: 'Marea alta', B: 'Marea baja',
+  nombre: 'Finca Suárez', P: 'Marea alta', B: 'Marea baja',
   sube: 'La marea está subiendo', baja: 'La marea está bajando', manana: 'mañana',
   apertura: 'El agua de hoy.', curvaTit: 'Cómo va el día', diasTit: 'Próximos días',
   tabs: { hoy: 'Hoy', curva: 'Curva', dias: 'Días' }, tabsAria: { hoy: 'Ir a Hoy', curva: 'Ir a la curva del día', dias: 'Ir a los próximos días' },
