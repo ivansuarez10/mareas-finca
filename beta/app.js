@@ -21,7 +21,7 @@ const T = {
   antesT: 'Todavía no hay horarios para esta fecha', antesX: f => 'Los horarios empiezan el ' + f + '. Conviene revisar la fecha del teléfono.',
   sinDatosT: 'No se pudieron mostrar los horarios', sinDatosX: 'Cerrar la app y abrirla otra vez. Si sigue igual, pedir que la actualicen.',
   aviso: 'Horas calculadas con un modelo del mar. Pueden no coincidir con otras páginas de mareas.', avisoCorto: 'Horas calculadas con un modelo del mar.', acerca: 'Acerca de los datos',
-  fuente: 'Los horarios vienen de un pronóstico del nivel del mar (Open-Meteo), calculado para la costa de San Lorenzo, Valle (Golfo de Fonseca), no para un punto exacto.',
+  fuente: 'Los horarios vienen de un pronóstico del nivel del mar (Open-Meteo), calculado para la costa de San Lorenzo, Valle (Golfo de Fonseca), no para un punto exacto. Las horas se ajustaron para acercarlas a las de San Lorenzo; es un ajuste provisional.',
   vigencia: f => 'Horarios hasta el ' + f + '. Hay que actualizarlos.',
   nueva: 'Hay una versión nueva. Cerrar la app y abrirla otra vez.',
   fresco: {
@@ -70,7 +70,7 @@ const mayus = x => x.charAt(0).toUpperCase() + x.slice(1);
 
 /* ---------- datos: de R.D a un modelo listo para pintar ---------- */
 const BASE = window.D;                 // tabla guardada (data.js): es lo que DatosVivos mezcla
-let R = { estado: 'cargando', actualizado: null, D: BASE };
+let R = { estado: 'cargando', actualizado: null, D: (typeof DatosVivos !== 'undefined' && DatosVivos.ajustar) ? DatosVivos.ajustar(BASE) : BASE };   // primer pintado ya con el ajuste a la hora de San Lorenzo
 let M = null;                          // modelo derivado de R.D (o null si los datos no sirven)
 let AH = ahoraMs();
 

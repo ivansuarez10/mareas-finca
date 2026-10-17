@@ -58,9 +58,35 @@
   function leer() { try { return JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { return null; } }
   function guardar(o) { try { localStorage.setItem(CLAVE, JSON.stringify(o)); } catch (e) {} }
 
+  /* AJUSTE PROVISIONAL a la hora de San Lorenzo (16-17 oct 2026): el modelo del mar abierto va antes que la marea del interior del Golfo.
+     Medido contra TidesAtlas San Lorenzo en 33 mareas: las altas llegan ~29 min despues y las bajas ~45 min (desv. ~8 min).
+     Las horas de cada marea se corren por tipo y la curva (D.y) se estira entre ellas, para que curva y horas no se contradigan.
+     Se reemplaza por la calibracion con la regla de la finca cuando exista. Las alturas no cambian. */
+  const AJUSTE = { P: 29, B: 45 };                                           // minutos
+  const iso16 = (ms) => new Date(ms).toISOString().slice(0, 16);
+  function ajustar(D) {
+    try {
+      const evs = D.ev.map(([a, k, h]) => [a.slice(0, 16), k, h]).sort((p, q) => (p[0] < q[0] ? -1 : 1));
+      if (evs.length < 3) return D;
+      const o = evs.map((e) => Date.parse(e[0] + ':00Z')), n = evs.map((e, i) => o[i] + (AJUSTE[e[1]] || 0) * 6e4);
+      for (let i = 1; i < n.length; i++) if (n[i] <= n[i - 1]) return D;      // orden roto: no tocar nada
+      const S0 = Date.parse(D.start + 'T00:00:00Z'), P = 18e5, L = D.y.length, y2 = new Array(L);
+      const muestra = (t) => { const x = (t - S0) / P, i = Math.floor(x); if (i < 0) return D.y[0]; if (i >= L - 1) return D.y[L - 1]; const k = x - i; return D.y[i] + (D.y[i + 1] - D.y[i]) * k; };
+      let j = 0;
+      for (let q = 0; q < L; q++) {
+        const tn = S0 + q * P; let to;
+        if (tn <= n[0]) to = tn - (n[0] - o[0]);
+        else if (tn >= n[n.length - 1]) to = tn - (n[n.length - 1] - o[o.length - 1]);
+        else { while (j < n.length - 2 && tn >= n[j + 1]) j++; to = o[j] + (tn - n[j]) * (o[j + 1] - o[j]) / (n[j + 1] - n[j]); }
+        const v = muestra(to); y2[q] = Math.round(v * 100) / 100;
+      }
+      return Object.assign({}, D, { y: y2, ev: evs.map((e, i) => [iso16(n[i]), e[1], e[2]]), ajuste: { alta: AJUSTE.P, baja: AJUSTE.B, fuente: 'TidesAtlas San Lorenzo (provisional)' } });
+    } catch (e) { return D; }
+  }
+
   async function cargar(D, opciones) {
     const f = (opciones && opciones.fetch) || root.fetch, ahora = Date.now(), c = leer();
-    if (c && ahora - c.t < TTL_FRESCO && c.j) { const m = mezclar(D, c.j); if (m) return { estado: 'vivo', actualizado: new Date(c.t), vivoHasta: m.vivoHasta, delta: m.delta, D: m.D }; }
+    if (c && ahora - c.t < TTL_FRESCO && c.j) { const m = mezclar(D, c.j); if (m) return { estado: 'vivo', actualizado: new Date(c.t), vivoHasta: m.vivoHasta, delta: m.delta, D: ajustar(m.D) }; }
     try {
       const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, to = ctl && setTimeout(() => ctl.abort(), 8000);
       let r, j; try { r = await f(URL, ctl ? { signal: ctl.signal } : undefined);   // 09 (ronda 6, H1): el timeout cubre cabeceras Y cuerpo
@@ -68,12 +94,12 @@
       j = await r.json(); } finally { if (to) clearTimeout(to); }
       const m = mezclar(D, j); if (!m) throw new Error('datos incompletos');
       guardar({ t: ahora, j: { hourly: j.hourly } });
-      return { estado: 'vivo', actualizado: new Date(ahora), vivoHasta: m.vivoHasta, delta: m.delta, D: m.D };
+      return { estado: 'vivo', actualizado: new Date(ahora), vivoHasta: m.vivoHasta, delta: m.delta, D: ajustar(m.D) };
     } catch (e) {
-      if (c && c.j && ahora - c.t < TTL_RECIENTE) { const m = mezclar(D, c.j); if (m) return { estado: 'reciente', actualizado: new Date(c.t), vivoHasta: m.vivoHasta, delta: m.delta, D: m.D }; }
-      return { estado: 'guardado', actualizado: null, vivoHasta: null, D, error: String(e && e.message || e) };
+      if (c && c.j && ahora - c.t < TTL_RECIENTE) { const m = mezclar(D, c.j); if (m) return { estado: 'reciente', actualizado: new Date(c.t), vivoHasta: m.vivoHasta, delta: m.delta, D: ajustar(m.D) }; }
+      return { estado: 'guardado', actualizado: null, vivoHasta: null, D: ajustar(D), error: String(e && e.message || e) };
     }
   }
-  root.DatosVivos = { cargar, extremos, CELDA };
+  root.DatosVivos = { cargar, extremos, ajustar, CELDA };
   if (typeof module !== 'undefined') module.exports = root.DatosVivos;
 })(typeof window !== 'undefined' ? window : globalThis);
