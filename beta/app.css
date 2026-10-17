@@ -183,3 +183,16 @@ button { font: inherit; color: inherit; }
 
 /* teléfonos cortos (360×800): menos aire arriba */
 @media (max-height: 760px) { .gran { font-size: min(4rem, 19cqw); } .hero { margin-top: 1.1rem; } .estado { margin-top: 1rem; } }
+
+/* LEGIBILIDAD (17 oct 2026, pedido de Ivan: "se lee pero no es tan facil"): su papa lo lee a pleno sol.
+   Trazo un paso mas firme (300 -> 400), las dos mareas con el mismo peso visual, rotulos y cuenta mas grandes, avisos mas legibles. */
+.gran, .med, .l-hora, .f-hora { font-weight: 400; }
+.tit, .dia h2, .finbox h2 { font-weight: 400; }
+.med { font-size: max(52px, min(3.5rem, 15cqw)); }
+.rot { font-size: 1.25rem; font-weight: 600; }
+.estado { font-size: 1.375rem; font-weight: 500; }
+.cuenta { font-size: 1.375rem; font-weight: 500; }
+.fresco, .aviso, .fuente, .vigencia, .nueva, .credito { font-size: 1.0625rem; color: var(--tx); }
+.cab h1 { font-size: 1.125rem; font-weight: 600; color: var(--tx); }
+.cab #fecha { font-size: 1.0625rem; color: var(--tx); }
+.f-rot { font-size: 1.25rem; font-weight: 500; }

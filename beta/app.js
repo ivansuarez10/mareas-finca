@@ -20,8 +20,8 @@ const T = {
   despuesT: 'Ya no hay horarios', despuesX: f => 'Los horarios llegaron hasta el ' + f + '. Hay que actualizar los horarios.',
   antesT: 'Todavía no hay horarios para esta fecha', antesX: f => 'Los horarios empiezan el ' + f + '. Conviene revisar la fecha del teléfono.',
   sinDatosT: 'No se pudieron mostrar los horarios', sinDatosX: 'Cerrar la app y abrirla otra vez. Si sigue igual, pedir que la actualicen.',
-  aviso: 'Horas calculadas con un modelo del mar. Pueden no coincidir con otras páginas de mareas.', avisoCorto: 'Horas calculadas con un modelo del mar.', acerca: 'Acerca de los datos',
-  fuente: 'Los horarios vienen de un pronóstico del nivel del mar (Open-Meteo), calculado para la costa de San Lorenzo, Valle (Golfo de Fonseca), no para un punto exacto. Las horas se ajustaron para acercarlas a las de San Lorenzo; es un ajuste provisional.',
+  aviso: 'Pronóstico de mareas para la costa de San Lorenzo, Valle.', avisoCorto: 'Pronóstico para la costa de San Lorenzo.', acerca: 'Acerca de los datos',
+  fuente: 'Las horas son un pronóstico, no una medición. Vienen de un modelo del mar (Open-Meteo) para la costa de San Lorenzo, Valle, en el Golfo de Fonseca, y se ajustaron para acercarlas a la hora de San Lorenzo. Pueden variar unos minutos y no coincidir con otras páginas de mareas; ese ajuste es provisional.',
   vigencia: f => 'Horarios hasta el ' + f + '. Hay que actualizarlos.',
   nueva: 'Hay una versión nueva. Cerrar la app y abrirla otra vez.',
   fresco: {
