@@ -195,4 +195,11 @@ button { font: inherit; color: inherit; }
 .fresco, .aviso, .fuente, .vigencia, .nueva, .credito { font-size: 1.0625rem; color: var(--tx); }
 .cab h1 { font-size: 1.125rem; font-weight: 600; color: var(--tx); }
 .cab #fecha { font-size: 1.0625rem; color: var(--tx); }
+/* Ronda 9: la placa del encabezado = el ícono publicado (camarón crema sobre navy) en miniatura. Es el destino del vuelo de la portada (index.html). 2.75rem = 44 px a letra 100 %. */
+.cab { display: grid; grid-template-columns: auto 1fr; column-gap: .8rem; align-items: center; }
+.cab__marca { grid-row: 1; grid-column: 1; width: 44px; height: 44px; border-radius: 10px; background: #0C2340; display: grid; place-items: center; }
+.cab__marca svg { width: 29.6px; aspect-ratio: 35.5 / 25.5; height: auto; display: block; }
+.cab h1 { grid-row: 1; grid-column: 2; align-self: center; }
+.cab #fecha { grid-row: 2; grid-column: 1 / -1; margin-top: .35rem; }   /* la fecha conserva TODO el ancho: la placa solo comparte renglón con el nombre (letra grande) */
+.fs-portada .cab__marca svg { visibility: hidden; }
 .f-rot { font-size: 1.25rem; font-weight: 500; }

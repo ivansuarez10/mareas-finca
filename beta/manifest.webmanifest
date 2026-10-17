@@ -1,2 +1,2 @@
-{"name":"Finca Suárez (beta)","short_name":"Suárez beta","start_url":"./","scope":"./","display":"standalone","background_color":"#0C2340","theme_color":"#2b3b40","lang":"es-HN",
+{"name":"Finca Suárez (beta)","short_name":"Suárez beta","start_url":"./","scope":"./","display":"standalone","background_color":"#0C2340","theme_color":"#0C2340","lang":"es-HN",
 "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},{"src":"icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}

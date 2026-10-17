@@ -3,7 +3,7 @@
    Datos: window.D (data.js) + DatosVivos.cargar(D) (datos-vivos.js con la guarda >= 24 valores de la ronda 4). Todos los números salen de R.D.
    Hora de Honduras = UTC-6 fija. Sin metros, sin coordenadas, sin "oficial".
    Parámetros de PRUEBA para el QA (RETIRAR al integrar, ver INTEGRACION.md; cada bloque va entre las marcas PRUEBA y FIN PRUEBA):
-   ?tinta=claro|oscuro  ?letra=100|130|150  ?sinblur=1 (head de index.html)  ?clima=momento-condicion  ?estilo=a|b  ?selector=1 (clima-prueba.js, ronda 7)   ?estado=vivo|reciente|guardado|cargando|mala  ?ahora=AAAA-MM-DDTHH:MM  ?portada=1 (este archivo)
+   ?tinta=claro|oscuro  ?letra=100|130|150  ?sinblur=1 (head de index.html)  ?clima=momento-condicion  ?estilo=a|b  ?selector=1 (clima-prueba.js, ronda 7)   ?estado=vivo|reciente|guardado|cargando|mala  ?ahora=AAAA-MM-DDTHH:MM  ?portada=1 (head de index.html, portada del camarón)
    Rutas: #hoy | #curva | #dias */
 (function () {
 'use strict';
@@ -94,6 +94,8 @@ function nivel(t) {
 const frac = t => Math.min(1, Math.max(0, (nivel(t) - M.lo) / (M.hi - M.lo)));
 function ponerDatos(r) { R = r; try { M = modelo(r.D); } catch (e) { M = null; } }
 ponerDatos(R);
+/* Ronda 9: la portada (index.html) pregunta aquí el nivel de AHORA, 0..1, el mismo que dibuja el cursor de la Curva. Es una posición dentro del rango del modelo, no una cifra. null = sin dato. */
+window.__nivelAhora = () => { try { return M && !estadoFechas() ? frac(AH) : null; } catch (e) { return null; } };   // tabla vencida o fuera de rango: sin nivel, nunca uno viejo
 
 /* ---------- frescura (renglón fijo en el mismo sitio, sin rojo ni "error") ---------- */
 function frescoInfo() {
@@ -114,20 +116,10 @@ const frescoIc = f => f.i === 'vivo' ? '<span class="punto" aria-hidden="true"><
 const frescoHtml = () => { const f = frescoInfo(); return '<p class="fresco">' + frescoIc(f) + '<span>' + f.t + '</span></p>'; };
 
 /* ---------- armazón ---------- */
-/* Entrada del primer uso del día (MareaCristal.entrada): 1.5 s, una vez por día de Honduras, solo en Hoy, la salta cualquier toque; sin movimiento, sin entrada.
-   Se decide ANTES de pintar y la clase 'entrando' se pone de una vez: así el panel nunca se ve un instante antes de la entrada. */
-function decideEntrada() {
-  const h = location.hash.slice(1);
-  if ((h === 'curva' || h === 'dias') || MareaCristal.reducido() || document.hidden) return false;
-  /* PRUEBA 3/3 (retirar al integrar): ?portada=1 fuerza la entrada. Al retirarlo, dejar const forzar = false; */
-  const forzar = Q.get('portada') === '1';
-  /* FIN PRUEBA */
-  if (forzar) return true;
-  try { const hoyS = new Date(ahoraMs()).toISOString().slice(0, 10); if (localStorage.getItem('mareas.entrada') === hoyS) return false; localStorage.setItem('mareas.entrada', hoyS); return true; } catch (e) { return false; }
-}
-const ENTRA = decideEntrada();
+/* Ronda 9: la entrada del primer uso del día ya no es la del panel (MareaCristal.entrada, tarjeta .apertura) sino la portada del camarón, que vive EN LÍNEA en index.html (FS) y vuela hasta la placa del encabezado.
+   ENTRA queda en false para no tener dos entradas encimadas; la tarjeta .apertura se quita del DOM más abajo. */
+const ENTRA = false;
 const app = document.getElementById('app');
-if (ENTRA) app.classList.add('entrando');
 let acercaAbierto = false, vista = 'hoy', nVisibles = DIAS_PASO, hayNueva = false, curvaH = null, tecla = '';
 /* Ronda 7: el fondo ya no es una foto. Línea de honestidad y atribución del clima (el enlace es solo un enlace: no es una petición de la app). */
 T.clima = 'El fondo refleja el clima de ahora en la costa de San Lorenzo, Valle. Es aproximado y no es una alerta oficial.';
@@ -187,7 +179,7 @@ function vistaHoy() {
   const otro = M.ev.find(e => e.t > AH && e.k !== sig.k), hoyI = diaIni(AH);
   const dia = e => (diaIni(e.t) > hoyI ? ' · ' + T.manana : '');
   const sube = sig.k === 'P';
-  return '<header class="cab"><h1>' + T.nombre + '</h1><span id="fecha"></span></header><p class="estado">' + flecha(sig.k, 'circ') + '<span>' + (sube ? T.sube : T.baja) + '</span></p>' +
+  return '<header class="cab"><span class="cab__marca" aria-hidden="true"><svg viewBox="1 1.5 35.5 25.5" focusable="false"><use href="#fs-p" fill="#F2E9D0"/></svg></span><h1>' + T.nombre + '</h1><span id="fecha"></span></header><p class="estado">' + flecha(sig.k, 'circ') + '<span>' + (sube ? T.sube : T.baja) + '</span></p>' +
     '<div class="hero" role="group" aria-label="Próxima ' + T[sig.k] + ', ' + horaTxt(sig.t) + ', ' + cuentaTxt(sig.t - AH) + '"><p class="rot">' + T[sig.k] + dia(sig) + '</p><p class="gran">' + horaHtml(sig.t) + '</p><p class="cuenta">' + cuentaTxt(sig.t - AH) + '</p></div>' +
     (otro ? '<div class="seg" role="group" aria-label="Siguiente ' + T[otro.k] + ', ' + horaTxt(otro.t) + '"><p class="rot">' + T[otro.k] + dia(otro) + '</p><p class="med">' + horaHtml(otro.t) + '</p></div>' : '') +
     frescoHtml() + '<p class="aviso">' + T.aviso + '</p>' + vigenciaHtml() +
@@ -293,7 +285,10 @@ function render() {
   app.dataset.estado = R.estado; app.dataset.p = vista;
   panel.classList.toggle('alta', vista === 'dias' && !!M && !estadoFechas()); panel.classList.toggle('hoy', vista === 'hoy');
   curvaH = null;
+  /* Ronda 9: si la portada está volando hacia la placa del encabezado, esa placa (con su animación) se conserva al repintar: los datos nuevos entran sin mover el destino. */
+  const placaVieja = window.__fsRetiene ? document.querySelector('.cab__marca') : null;
   vistaEl.innerHTML = vista === 'curva' ? vistaCurva() : vista === 'dias' ? vistaDias() : vistaHoy();
+  if (placaVieja) { const nueva = document.querySelector('.cab__marca'); if (nueva) nueva.replaceWith(placaVieja); }
   const ac = document.getElementById('acerca'); if (ac) { ac.open = acercaAbierto; ac.addEventListener('toggle', () => { acercaAbierto = ac.open; }); }
   marcarTabs(); pintaFecha();
   pieEl.innerHTML = vista === 'hoy' ? '' : frescoHtml();   // en Curva y Días la frescura queda fija al pie, siempre visible (también a letra 150 %)
