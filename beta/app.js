@@ -21,7 +21,7 @@ const T = {
   antesT: 'Todavía no hay horarios para esta fecha', antesX: f => 'Los horarios empiezan el ' + f + '. Conviene revisar la fecha del teléfono.',
   sinDatosT: 'No se pudieron mostrar los horarios', sinDatosX: 'Cerrar la app y abrirla otra vez. Si sigue igual, pedir que la actualicen.',
   aviso: 'Horas calculadas con un modelo del mar. Pueden no coincidir con otras páginas de mareas.', avisoCorto: 'Horas calculadas con un modelo del mar.', acerca: 'Acerca de los datos',
-  fuente: 'Los horarios vienen de un pronóstico del nivel del mar (Open-Meteo), calculado para el mar frente a San Lorenzo, no para un punto exacto.',
+  fuente: 'Los horarios vienen de un pronóstico del nivel del mar (Open-Meteo), calculado para la costa de San Lorenzo, Valle (Golfo de Fonseca), no para un punto exacto.',
   vigencia: f => 'Horarios hasta el ' + f + '. Hay que actualizarlos.',
   nueva: 'Hay una versión nueva. Cerrar la app y abrirla otra vez.',
   fresco: {
@@ -130,7 +130,7 @@ const app = document.getElementById('app');
 if (ENTRA) app.classList.add('entrando');
 let acercaAbierto = false, vista = 'hoy', nVisibles = DIAS_PASO, hayNueva = false, curvaH = null, tecla = '';
 /* Ronda 7: el fondo ya no es una foto. Línea de honestidad y atribución del clima (el enlace es solo un enlace: no es una petición de la app). */
-T.clima = 'El fondo refleja el clima de ahora en San Lorenzo. Es aproximado y no es una alerta oficial.';
+T.clima = 'El fondo refleja el clima de ahora en la costa de San Lorenzo, Valle. Es aproximado y no es una alerta oficial.';
 T.climaCredito = 'Datos del clima: <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (<a href="https://open-meteo.com/en/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>), adaptados para mostrar el fondo.';
 app.innerHTML = '<div class="fondo" id="fondo"></div><div class="apertura" aria-hidden="true"><div class="vidrio"><div class="vf"></div><div class="tinte"></div></div><b>' + T.nombre + '</b><span>' + T.apertura + '</span></div>' +
   '<div class="pila" id="pila"><main class="panel" id="panel"><div class="vidrio" id="vidrio" aria-hidden="true"><div class="vf"></div><div class="tinte"></div></div>' +

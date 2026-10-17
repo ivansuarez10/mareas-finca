@@ -4,7 +4,7 @@
    estado: 'vivo' (bajó datos ahora) | 'reciente' (copia en el teléfono de hace < 12 h) | 'guardado' (solo tabla del modelo)
    La celda de la consulta es la del modelo (mar abierto frente a San Lorenzo), no la finca. */
 (function (root) {
-  const CELDA = { lat: 13.375, lon: -87.54166 };
+  const CELDA = { lat: 13.39, lon: -87.45 };   // costa de San Lorenzo, Valle (Golfo de Fonseca); la API la ajusta a su celda de mar (13.375, -87.458)
   const URL = 'https://marine-api.open-meteo.com/v1/marine?latitude=' + CELDA.lat + '&longitude=' + CELDA.lon +
     '&hourly=sea_level_height_msl&timezone=America%2FTegucigalpa&forecast_days=16&timeformat=unixtime';
   const CLAVE = 'mareas-vivo-v1', TTL_FRESCO = 29 * 6e4, TTL_RECIENTE = 12 * 36e5;

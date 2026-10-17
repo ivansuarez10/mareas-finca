@@ -52,7 +52,7 @@
     rayoQuieto: true,     // r8: en modo quieto (Reducir movimiento) se pinta un rayo tenue fijo, sin destello, para que la tormenta se distinga de la lluvia
     solElevMin: 25,       // r8 (criterio del 05): elevación solar en grados donde empieza el sol intenso...
     solElevMax: 45,       // ...y donde llega al máximo (suavizado entre las dos); con más de 15 % de cloud_cover vale 0
-    lat: 13.42,           // r8: latitud del PUEBLO (no de la finca) para calcular la elevación del sol con setSol()
+    lat: 13.39,           // r8: latitud de la COSTA de San Lorenzo (no de la finca) para calcular la elevación del sol con setSol()
     solX: 74,             // r8: posición horizontal del sol, % del ancho (Apple lo deja cerca del 77 %)
     solY: -3,             // r8: posición vertical, % del alto (negativo = fuera del cuadro por arriba, el núcleo queda cortado por el borde)
     nubesCapas: 3,

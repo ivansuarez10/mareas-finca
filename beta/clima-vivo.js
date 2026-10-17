@@ -7,7 +7,7 @@
    Uso: ClimaVivo.iniciar({ contenedor, paletas, alEstado }) -> { traer, info, forzar, soltar, motor }. */
 (function (root) {
   'use strict';
-  var LAT = 13.42, LON = -87.45;   // pueblo de San Lorenzo (BRIEF), no la finca
+  var LAT = 13.39, LON = -87.45;   // costa de San Lorenzo, Valle (misma referencia que la marea), no la finca
   var URL = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON +
     '&current=weather_code,cloud_cover,precipitation,wind_speed_10m,wind_direction_10m,is_day&daily=sunrise,sunset&timezone=America%2FTegucigalpa&forecast_days=1';
   var CLAVE = 'mareas-clima-v1', CLAVE_SOL = 'mareas-clima-sol-v1';
