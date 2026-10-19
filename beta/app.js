@@ -123,6 +123,7 @@ const app = document.getElementById('app');
 let acercaAbierto = false, vista = 'hoy', nVisibles = DIAS_PASO, hayNueva = false, curvaH = null, tecla = '';
 /* Ronda 7: el fondo ya no es una foto. Línea de honestidad y atribución del clima (el enlace es solo un enlace: no es una petición de la app). */
 T.clima = 'El fondo refleja el clima de ahora en la costa de San Lorenzo, Valle. Es aproximado y no es una alerta oficial.';
+T.creditoMin = 'Datos: <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>';
 T.climaCredito = 'Datos del clima: <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (<a href="https://open-meteo.com/en/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>), adaptados para mostrar el fondo.';
 const MARCA = '<svg viewBox="1 1.5 35.5 25.5" focusable="false"><use href="#fs-p" fill="#F2E9D0"/></svg>';
 app.innerHTML = '<div class="fondo" id="fondo"></div>' +
@@ -206,7 +207,7 @@ function vistaHoy() {
   return '<div class="ev p hero" role="group" aria-label="Próxima ' + T[sig.k] + ', ' + horaTxt(sig.t) + ', ' + cuentaTxt(sig.t - AH) + '"><div class="fila"><p class="rot">' + T[sig.k] + dia(sig) + '</p><p class="cuenta">' + cuentaTxt(sig.t - AH) + '</p></div><p class="gran">' + horaHtml(sig.t) + '</p></div>' +
     (otro ? '<div class="ev s seg" role="group" aria-label="Siguiente ' + T[otro.k] + ', ' + horaTxt(otro.t) + '"><div class="fila"><p class="rot">' + T[otro.k] + dia(otro) + '</p></div><p class="med">' + horaHtml(otro.t) + '</p></div>' : '') +
     '<div class="pie-hoy"><p class="fecha" id="fecha"></p>' + frescoHtml() + '<p class="aviso">' + T.aviso + '</p>' + vigenciaHtml() +
-    '<details class="acerca" id="acerca"><summary>' + T.acerca + ic('der') + '</summary><p class="fuente">' + T.fuente + '</p>' + '<p class="fuente">' + T.clima + '</p><p class="credito">' + T.climaCredito + '</p>' + '</details>' + (hayNueva ? '<p class="nueva">' + T.nueva + '</p>' : '') + '</div>';
+    (hayNueva ? '<p class="nueva">' + T.nueva + '</p>' : '') + '</div>';
 }
 function listaDia(ini, sigT) {
   return M.ev.filter(e => e.t >= ini && e.t < ini + DIA).map(e =>
@@ -222,7 +223,7 @@ function vistaDias() {
     html += '<section class="dia"><h2>' + rot + '<span class="d-f"> ' + (i < 2 ? DIAS[d.getUTCDay()] + ' ' : '') + diaCorto(ini) + '</span></h2><ul class="lista">' + listaDia(ini, sigT) + '</ul></section>';
   }
   html += n < total ? '<button type="button" class="mas" id="mas" aria-label="' + T.verMas + ', hasta el ' + diaCorto(M.ultimoDia) + '">' + T.verMas + '</button>' : cajaFin(T.sinMasT, T.sinMasX(diaCorto(M.ultimoDia)));
-  return html + vigenciaHtml();
+  return html + vigenciaHtml() + '<p class="credito-min">' + T.creditoMin + '</p>';
 }
 function vistaCurva() {
   const raro = estadoFechas(), tit = '<h2 class="tit">' + T.curvaTit + '</h2>';
@@ -328,7 +329,23 @@ function tick() {
   render();
 }
 function actualizaFresco() { const f = frescoInfo(); app.querySelectorAll('.fresco').forEach(p => { p.innerHTML = frescoIc(f) + '<span>' + f.t + '</span>'; }); }
-function ir() { const h = location.hash.slice(1); vista = h === 'curva' || h === 'dias' ? h : 'hoy'; if (vista !== 'dias') nVisibles = DIAS_PASO; tecla = ''; AH = ahoraMs(); render(); if (vista !== 'hoy') hoja.scrollTop = 0; }
+
+/* ---------- "Acerca de los datos" OCULTO (Ivan, 19 oct): importante, pero no va en la pantalla de su papa. Se abre con pulsacion larga (0,7 s) sobre la pastilla "Finca Suarez" o con la direccion terminada en #acerca. ---------- */
+const acercaEl = document.createElement('div');
+acercaEl.id = 'acercaSheet'; acercaEl.className = 'acerca-sheet'; acercaEl.hidden = true; acercaEl.setAttribute('role', 'dialog'); acercaEl.setAttribute('aria-modal', 'true'); acercaEl.setAttribute('aria-label', T.acerca);
+acercaEl.innerHTML = '<div class="as-caja"><h2>' + T.acerca + '</h2><p class="fuente">' + T.fuente + '</p><p class="fuente">' + T.clima + '</p><p class="credito">' + T.climaCredito + '</p><button type="button" class="as-cerrar" id="asCerrar">Cerrar</button></div>';
+document.body.appendChild(acercaEl);
+const abrirAcerca = () => { acercaEl.hidden = false; const b = document.getElementById('asCerrar'); if (b) b.focus(); };
+const cerrarAcerca = () => { acercaEl.hidden = true; };
+acercaEl.addEventListener('click', e => { if (e.target === acercaEl || e.target.id === 'asCerrar') cerrarAcerca(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !acercaEl.hidden) cerrarAcerca(); });
+(function () {
+  const cab = document.getElementById('cab'); if (!cab) return; let t = 0;
+  const ini = () => { clearTimeout(t); t = setTimeout(() => { t = 0; abrirAcerca(); }, 700); }, fin = () => { clearTimeout(t); t = 0; };
+  cab.addEventListener('pointerdown', ini); ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(ev => cab.addEventListener(ev, fin));
+  cab.addEventListener('contextmenu', e => e.preventDefault());
+})();
+function ir() { const h = location.hash.slice(1); if (h === 'acerca') { abrirAcerca(); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} return; } vista = h === 'curva' || h === 'dias' ? h : 'hoy'; if (vista !== 'dias') nVisibles = DIAS_PASO; tecla = ''; AH = ahoraMs(); render(); if (vista !== 'hoy') hoja.scrollTop = 0; }
 addEventListener('hashchange', ir);
 let rz = null; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (vista === 'curva') render(); }, 200); });
 
