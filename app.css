@@ -1,82 +1,224 @@
-/* Mareas de la Finca · ronda 3 · pantallas (diseño del 05 + estados del 09). Usa tokens.css. */
+/* Mareas de la Finca · piel "Cristal del cielo" (05 diseño, 09 prototipo; ronda 10, 17 oct 2026; antes "Cristal sobre agua" r5-r9).
+   El cristal es un velo del tono del cielo (alfa por estado, lo calcula el motor) con backdrop-filter simple (<= 10 px) y borde de 0,5 px:
+   se ve el cielo moverse detrás. Hoy = pastilla + línea de estado flotando + tarjeta con lo vital + barra. */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-body { margin: 0; background: var(--fondo); color: var(--tinta); font-family: var(--fuente); font-size: 1rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
-h1, h2, p, ol, ul { margin: 0; padding: 0; }
-ol, ul { list-style: none; }
-.i { width: 1.5rem; height: 1.5rem; flex: none; fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }
-:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; border-radius: 6px; }
-/* Títulos y días reciben foco por programa (al cambiar de pantalla): nunca pintan aro, no son controles */
-[tabindex="-1"]:focus { outline: none; }
-.app { max-width: 30rem; margin: 0 auto; min-height: 100vh; padding-bottom: 28px; }
-.hr { white-space: nowrap; }
-.hr.sola { display: block; }
-.hr.sola .pt { display: none; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--font); font-weight: 400; color: var(--tx); background: #0d1d22; min-height: 100dvh; }
+button { font: inherit; color: inherit; }
+.ic { width: 1.25em; height: 1.25em; flex: none; vertical-align: -.2em; }
+.ic path, .ic circle, .ic rect { stroke-width: 1.6; }
 
-/* Cabecera marina: una sola pieza, una o dos líneas, nada más */
-.barra { background: var(--marino); color: #fff; padding: 16px var(--pad) 18px; }
-.barra .nombre { font-size: var(--t-sufijo); font-weight: 600; color: var(--cab-2); }
-.barra .ahora { margin-top: 2px; font-size: var(--t-dia); font-weight: 700; line-height: 1.25; }
-.fila-cab { display: flex; align-items: center; gap: 4px; margin: -8px 0; }
-.barra .volver { display: inline-flex; align-items: center; justify-content: center; min-width: var(--objetivo); min-height: var(--objetivo); margin-left: -12px; color: #fff; text-decoration: none; }
-.barra .titulo { font-size: var(--t-titulo); font-weight: 700; line-height: 1.2; }
-.barra :focus-visible { outline-color: #fff; }
-
-main { padding: var(--margen); display: block; }
-
-/* Próximas: UNA superficie blanca, dos filas separadas por un filete. Sin fondos de color. */
-.proximas { background: var(--superficie); border-radius: var(--radio); }
-.proxima { padding: 18px 20px 20px; }
-.proxima + .proxima { border-top: 1px solid var(--regla); }
-.etiqueta { display: flex; align-items: center; gap: 10px; font-size: var(--t-etiqueta); font-weight: 700; line-height: 1.2; }
-.etiqueta .i { color: var(--acento); width: 1.75rem; height: 1.75rem; stroke-width: 2; }
-.hora { margin-top: 4px; display: flex; align-items: baseline; gap: 8px; line-height: 1.05; }
-.hora b { font-size: var(--t-hora-grande); font-weight: 800; letter-spacing: -.01em; }
-.hora span { font-size: var(--t-sufijo-grande); font-weight: 600; color: var(--tinta-2); white-space: nowrap; }
-.apoyo { margin-top: 6px; font-size: var(--t-apoyo); font-weight: 500; color: var(--tinta-2); line-height: 1.25; }
-.direccion { padding: 14px 20px 16px; border-top: 1px solid var(--regla); font-size: var(--t-direccion); font-weight: 600; line-height: 1.25; }
-
-/* Botón de días: contorno, no relleno; no compite con las horas */
-.btn-dias, .manana { margin-top: 12px; }
-.btn-dias { display: flex; align-items: center; justify-content: space-between; min-height: var(--objetivo); padding: 0 16px 0 20px; border-radius: var(--radio); background: var(--superficie); border: 2px solid var(--acento); color: var(--acento); font-size: var(--t-dia); font-weight: 700; text-decoration: none; }
-
-/* Día: título sobre la superficie, una fila por marea, palabra SIEMPRE en la misma columna */
-.dia { background: var(--superficie); border-radius: var(--radio); overflow: clip; }
-.dia + .dia { margin-top: 12px; }
-.dia-nombre { padding: 14px 20px 6px; font-size: var(--t-dia); line-height: 1.25; }
-.dia-nombre b { font-weight: 800; }
-.dia-nombre span { color: var(--tinta-2); font-weight: 500; }
-.fila-m { display: grid; grid-template-columns: 1.75rem 1fr auto; align-items: center; column-gap: 10px; min-height: 3.5rem; padding: 4px 20px; }
-.fila-m + .fila-m { border-top: 1px solid var(--regla); }
-.fila-m .i { color: var(--acento); width: 1.75rem; height: 1.75rem; stroke-width: 2; }
-.fila-m .palabra { font-size: var(--t-fila); font-weight: 700; }
-.fila-m .h { display: flex; align-items: baseline; gap: 4px; justify-self: end; font-size: var(--t-hora-fila); font-weight: 800; white-space: nowrap; }
-.fila-m .h small { font-size: var(--t-sufijo); font-weight: 600; color: var(--tinta-2); }
-.dia ol { padding-bottom: 6px; }
-
-.mas { cursor: pointer; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: var(--objetivo); margin-top: 12px; padding: 0 16px 0 20px; border-radius: var(--radio); background: var(--superficie); border: 2px solid var(--acento); color: var(--acento); font: inherit; font-size: var(--t-dia); font-weight: 700; text-align: left; }
-
-.pie { padding: 22px 8px 8px; font-size: var(--t-pie); line-height: 1.4; color: var(--tinta-2); }
-.pie p + p { margin-top: 6px; }
-.pie .vigencia.pronto { font-weight: 700; color: var(--tinta); }   /* quedan 14 días o menos: más fuerte, sin rojo ni ícono */
-
-/* Estados sin horarios: misma superficie blanca que las mareas */
-.sin-mas { margin-top: 6px; font-size: 1.75rem; font-weight: 800; line-height: 1.15; }
-.proxima .cuerpo { margin-top: 6px; font-size: var(--t-apoyo); color: var(--tinta-2); line-height: 1.3; }
-.estado { background: var(--superficie); border-radius: var(--radio); padding: 24px 20px; }
-.estado h2 { font-size: var(--t-etiqueta); font-weight: 800; line-height: 1.2; }
-.estado p { margin-top: 8px; font-size: var(--t-apoyo); color: var(--tinta-2); line-height: 1.35; }
-
-/* Letra grande en pantalla angosta: una marea por renglón, sin partir la palabra; el símbolo y el sufijo bajan un poco */
-.app { container-type: inline-size; }
-.fila-m .palabra { white-space: nowrap; }
-@container (max-width: 22rem) {
-  .fila-m { grid-template-columns: 1.125rem 1fr auto; column-gap: 6px; padding: 4px 12px; }
-  .fila-m .i { width: 1.125rem; height: 1.125rem; }
-  .fila-m .palabra { font-size: 1.0625rem; }
-  .fila-m .h { font-size: 1.25rem; gap: 3px; }
-  .fila-m .h small { font-size: .875rem; }
-  .dia-nombre, .proxima, .direccion { padding-left: 16px; padding-right: 16px; }
-  .hora b { font-size: 3rem; }
-  .hora span { font-size: 1.125rem; }
+/* ---------- pantalla ---------- */
+.app { position: relative; width: min(100%, 440px); height: 100dvh; margin: 0 auto; overflow: hidden; container-type: size; isolation: isolate; }
+.fondo { position: absolute; background: var(--fondo); }
+.fondo { inset: calc(-1 * var(--sobre)); }
+@media (min-width: 700px) {
+  body { display: grid; place-items: center; background: #0d1d22; }
+  .app { height: min(calc(100dvh - 48px), 900px); border-radius: 40px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
 }
+
+/* ---------- el cristal (ronda 10): velo del tono del cielo + backdrop-filter simple. Sin horneado, sin refracción (cristal-liquido.* ya no se carga). ----------
+   El panel de Curva y Días sigue siendo UNO por pantalla; en Hoy son tres piezas hermanas: pastilla (.cab), tarjeta (.panel) y barra, más la línea de estado que flota sobre el cielo. */
+.pila { --barra-h: calc(var(--tap) + 8px); --hueco: 8px; position: absolute; left: var(--margen); right: var(--margen); bottom: var(--margen); z-index: 2; display: flex; flex-direction: column; gap: var(--hueco); max-height: calc(100cqh - var(--margen) * 2); pointer-events: none; }
+.pila > * { pointer-events: auto; }
+/* Hoy: el tope de la pila deja libre la pastilla (arriba) y la banda de cielo limpia; la tarjeta se desliza por dentro si la letra es muy grande */
+.app[data-p="hoy"] .pila { max-height: calc(100cqh - var(--margen) - var(--tope)); }
+.app { --tope: calc(max(env(safe-area-inset-top, 0px), 24px) + 52px + var(--banda-libre)); }
+.panel { position: relative; flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: var(--r); }
+.panel.alta { height: calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)); }
+.panel:not(.hoy):not(.alta) { max-height: calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)); }
+.vidrio { background: var(--cristal); -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat)); backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  border: var(--borde-cristal) solid var(--borde); box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .28); }
+.panel.vidrio { overflow: hidden; }
+/* el 08 avisa (data-nivel en .cf, evento cf:nivel) si el teléfono no sostiene los cuadros: 1 = el cielo baja de calidad, el cristal suelta el desenfoque; 2 = cielo quieto, cristal sin desenfoque */
+.app[data-nivel="1"], .app[data-nivel="2"] { --blur: 0px; }
+.app[data-nivel="1"] .vidrio, .app[data-nivel="2"] .vidrio { -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (prefers-reduced-transparency: reduce) { .vidrio { background: var(--vid-solido); -webkit-backdrop-filter: none; backdrop-filter: none; } .estado::before { background: var(--vid-solido) !important; } }
+.cont { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1.125rem .25rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(#000 calc(100% - 1.5rem), transparent); mask-image: linear-gradient(#000 calc(100% - 1.5rem), transparent); }
+.cont::-webkit-scrollbar { display: none; }
+.pie { position: relative; z-index: 1; padding: 0 1.125rem .75rem; }
+.pie:empty { display: none; }
+.pie .fresco { margin: .5rem 0 0; }
+.cont:focus-visible { outline: 2px solid var(--tx); outline-offset: -4px; border-radius: var(--r); }
+
+/* ---------- barra de pestañas: píldora de cristal ---------- */
+.barra { flex: none; border-radius: var(--r-pill); display: flex; padding: 4px 8px; container-type: inline-size; --velo-alfa: var(--vid-alfa-barra, var(--vid-alfa, .4)); }
+.barra a { flex: 1; min-height: var(--tap); display: flex; align-items: center; justify-content: center; gap: .5rem; color: var(--tx2); text-decoration: none; font-size: 1rem; font-weight: 400; border-radius: var(--r-pill); }
+.barra a span { text-underline-offset: .45rem; text-decoration-thickness: 2px; }
+.barra a[aria-current="page"] { color: var(--tx); font-weight: 500; background: var(--activa); }
+.barra a[aria-current="page"] span { text-decoration-line: underline; }
+.barra a:focus-visible, .mas:focus-visible, .controles button:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; }
+@container (max-width: 22rem) { .barra a { flex-direction: column; gap: .1rem; padding: .35rem 0; } .barra .ic { width: 1.5rem; height: 1.5rem; } }   /* letra 130 % o más: ícono arriba, palabra abajo */
+
+/* ---------- pastilla del encabezado (Hoy, Curva y Días): el nombre. Es el destino del vuelo del camarón (r9). ---------- */
+.cab { position: absolute; z-index: 2; left: var(--margen); top: max(env(safe-area-inset-top, 0px), 24px); max-width: 78%; display: flex; align-items: center; gap: .625rem; padding: 4px 1rem 4px 4px; border-radius: var(--r-pill); --velo-alfa: var(--vid-alfa-cab, var(--vid-alfa, .4)); }
+.cab h1 { margin: 0; font-size: 1.125rem; font-weight: 500; line-height: 1.2; color: var(--tx); white-space: nowrap; letter-spacing: .01em; }
+.cab__marca { width: 44px; height: 44px; flex: none; border-radius: 10px; background: #0C2340; display: grid; place-items: center; }
+.cab__marca svg { width: 29.6px; aspect-ratio: 35.5 / 25.5; height: auto; display: block; }
+.fs-portada .cab__marca svg { visibility: hidden; }
+
+/* ---------- Hoy ---------- */
+.estado { display: flex; align-items: center; gap: .6rem; margin: 1.1rem 0 0; font-size: 1.25rem; font-weight: 400; line-height: 1.25; }
+.flecha { display: inline-flex; color: var(--sube); }
+.flecha[data-k="B"] { color: var(--baja); }
+.flecha .ic { width: 1.5rem; height: 1.5rem; }
+.estado .flecha .ic { width: 1.75rem; height: 1.75rem; }
+.estado .flecha .ic path { stroke-width: 2.1; }
+.rot { margin: 0; font-size: 1.125rem; font-weight: 500; color: var(--tx); }   /* rótulos: texto principal (meta 7:1) */
+.hero { margin-top: 1.1rem; }
+.gran, .med { margin: .1rem 0 0; font-weight: 300; letter-spacing: -.025em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gran { font-size: min(4.5rem, 19cqw); }   /* la hora grande no crece más que el ancho: 'a. m.' nunca se corta */
+.med { font-size: max(44px, min(2.75rem, 12cqw)); letter-spacing: -.02em; }
+.gran small, .med small { font-size: .32em; font-weight: 400; letter-spacing: 0; color: var(--tx2); }
+.med small { font-size: .42em; }
+.cuenta { margin: .5rem 0 0; font-size: 1.25rem; font-weight: 400; }
+.seg { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--linea); }
+.fresco { display: flex; align-items: center; gap: .55rem; margin: 1.1rem 0 0; font-size: 1rem; color: var(--tx2); line-height: 1.35; }
+.fresco .ic { width: 1.25rem; height: 1.25rem; }
+.punto { width: .55rem; height: .55rem; margin: 0 .35rem; flex: none; border-radius: 50%; background: var(--sube); }
+.aviso, .fuente, .vigencia, .nueva { margin: .6rem 0 0; font-size: 1rem; color: var(--tx2); line-height: 1.4; }
+.fuente { font-size: 1rem; }
+.acerca { margin-top: .25rem; }
+.acerca summary { display: flex; align-items: center; justify-content: space-between; min-height: var(--tap); font-size: 1rem; color: var(--tx); cursor: pointer; list-style: none; }
+.acerca summary::-webkit-details-marker { display: none; }
+.acerca summary .ic { transition: transform .15s; }
+.acerca[open] summary .ic { transform: rotate(90deg); }
+.acerca summary:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; border-radius: var(--r-sm); }
+.acerca[open] { padding-bottom: .5rem; }
+.credito { margin: .6rem 0 0; font-size: 1rem; color: var(--tx2); line-height: 1.4; }
+.credito a { color: var(--tx); text-underline-offset: .2em; display: inline-block; padding: .55rem 0; }
+.credito a:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; }
+.vigencia { display: flex; gap: .5rem; }
+.nueva { color: var(--tx); font-weight: 500; }
+.gira { animation: gira 1.6s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* ---------- títulos de vista y cajas de fin ---------- */
+.tit { margin: 1.1rem 0 .25rem; font-size: min(1.75rem, 30px); font-weight: 300; letter-spacing: -.01em; line-height: 1.15; }
+.finbox { display: flex; gap: .9rem; margin-top: 1.5rem; align-items: flex-start; }
+.finbox .ic { width: 1.75rem; height: 1.75rem; margin-top: .15rem; color: var(--tx2); }
+.finbox h2 { margin: 0; font-size: 1.5rem; font-weight: 300; line-height: 1.2; }
+.finbox p { margin: .4rem 0 0; font-size: 1.125rem; line-height: 1.4; }
+
+/* ---------- Curva ---------- */
+.lectura { display: flex; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; min-height: 4.5rem; margin-top: .75rem; }
+.l-hora { font-size: min(2.75rem, 52px); font-weight: 300; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.l-hora small { font-size: .4em; font-weight: 400; color: var(--tx2); }
+.l-alt { font-size: 1.25rem; color: var(--tx2); }
+.l-alt:empty { display: none; }
+.l-dir { display: inline-flex; align-items: center; gap: .3rem; font-size: 1.25rem; }
+.graf { margin: .25rem -.25rem 0; position: relative; touch-action: pan-y; }
+.curva { display: block; max-width: 100%; overflow: visible; cursor: ew-resize; touch-action: pan-y; outline-offset: 4px; }
+.curva:focus:not(:focus-visible) { outline: none; }
+.c-area { fill: url(#g-area); }
+.c-line { fill: none; stroke: var(--tx); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.c-hora { fill: var(--tx); font-weight: 400; }
+.c-hora .ap, .c-hora .c-pal { fill: var(--tx2); }
+.c-tick { fill: var(--tx2); font-weight: 400; }
+.c-tk { stroke: var(--tx2); stroke-width: 1; stroke-dasharray: 2 5; opacity: .5; }
+.c-ev { fill: var(--vid-solido, #fff); stroke: var(--tx); stroke-width: 1.5; }
+.c-now-l { stroke: var(--tx); stroke-width: 1; stroke-dasharray: 3 5; opacity: .55; }
+.c-now { fill: var(--tx); stroke: var(--vid-solido, #fff); stroke-width: 3; }
+.c-cur-l { stroke: var(--tx); stroke-width: 1.5; }
+.c-cur-p { fill: var(--vid-solido, #fff); stroke: var(--tx); stroke-width: 2.5; }
+.mv-halo { position: absolute; width: 2.25rem; height: 2.25rem; margin: -1.125rem 0 0 -1.125rem; border-radius: 50%; background: var(--tx); opacity: .14; pointer-events: none; }
+[data-tinta="claro"] { --vid-solido: #FFFBF6; }
+[data-tinta="oscuro"] { --vid-solido: #14303A; }
+.controles { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .5rem; }
+.controles button, .mas { flex: 1 1 9.5rem; min-height: var(--tap); display: inline-flex; align-items: center; justify-content: center; gap: .3rem; padding: 0 .5rem; background: transparent; white-space: nowrap; border: 1px solid var(--boton); border-radius: var(--r-sm); font-size: 1rem; font-weight: 400; cursor: pointer; }
+.controles button { min-height: min(var(--tap), 52px); }   /* ronda 6 (H3): a letra 150 % los dos botones ocupan menos y "Hora siguiente" queda sobre el desvanecido */
+.mas { width: 100%; margin-top: 1.25rem; }
+.controles button:active, .mas:active { background: var(--linea); }
+
+/* ---------- Días ---------- */
+.dia { margin-top: 1.25rem; }
+.dia + .dia { padding-top: 1.25rem; border-top: 1px solid var(--linea); }   /* un solo divisor, entre días */
+.dia h2 { margin: 0; font-size: 1.5rem; font-weight: 300; line-height: 1.2; }
+.d-f { font-size: 1rem; font-weight: 400; color: var(--tx2); margin-left: .35rem; }
+.lista { list-style: none; margin: .5rem 0 0; padding: 0; }
+.f-txt { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 .75rem; min-height: 3.5rem; }   /* a letra grande la hora baja a otra línea en vez de cortarse */
+.fila .flecha { margin-right: .65rem; }
+.fila { display: flex; align-items: center; }
+.f-txt { flex: 1; }
+.f-rot { font-size: 1.125rem; font-weight: 400; flex: 1 1 6.5rem; }
+.f-hora { font-size: 1.75rem; font-weight: 300; letter-spacing: -.015em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.f-hora small { font-size: 1rem; font-weight: 400; color: var(--tx2); }
+.fila.pasada .f-rot, .fila.pasada .f-hora { color: var(--tx2); }
+.fila.pasada .flecha { color: var(--tx2); }
+.fila.sig .f-rot { font-weight: 500; }
+.fila.sig .f-hora { font-weight: 400; }
+
+@media (prefers-reduced-motion: reduce) { .gira { animation: none; } }
+
+/* teléfonos cortos (360×800): menos aire arriba */
+@media (max-height: 760px) { .gran { font-size: min(4rem, 19cqw); } .hero { margin-top: 1.1rem; } .estado { margin-top: 1rem; } }
+
+/* LEGIBILIDAD (17 oct 2026, pedido de Ivan: "se lee pero no es tan facil"): su papa lo lee a pleno sol.
+   Trazo un paso mas firme (300 -> 400), las dos mareas con el mismo peso visual, rotulos y cuenta mas grandes, avisos mas legibles. */
+.gran, .med, .l-hora, .f-hora { font-weight: 400; }
+.tit, .dia h2, .finbox h2 { font-weight: 400; }
+.med { font-size: max(52px, min(3.5rem, 15cqw)); }
+.rot { font-size: 1.25rem; font-weight: 600; }
+.estado { font-size: 1.375rem; font-weight: 500; }
+.cuenta { font-size: 1.375rem; font-weight: 500; }
+.fresco, .aviso, .fuente, .vigencia, .nueva, .credito { font-size: 1.0625rem; color: var(--tx); }
+.f-rot { font-size: 1.25rem; font-weight: 500; }
+
+/* ======================= HOY, ronda 10 (diseño del 05: diseno/pantalla.html) ======================= */
+/* Línea de estado: flota sobre el cielo, sin caja. La franja de arriba es un degradado que sube del velo del cristal para asegurar la lectura sin tinte pesado. */
+.app[data-p="hoy"] .estado { flex: none; position: relative; z-index: 2; margin: 0 calc(var(--margen) * -1) calc(var(--hueco) * -1); padding: var(--franja) calc(var(--margen) + 1rem) .625rem;
+  display: flex; align-items: center; gap: .625rem; font-size: 1.375rem; font-weight: 500; line-height: 1.2; color: var(--tx); }
+/* r10b-QA: sin caja. Un velo con las cuatro orillas difuminadas (nace en alfa 0 hacia arriba, a los lados y abajo, donde ya empieza el velo de la tarjeta): no hay borde que reconocer. */
+.app[data-p="hoy"] .estado::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: 0; right: 0; top: 0; bottom: .1rem;
+  background: rgba(var(--velo-rgb), calc(var(--loc-alfa) * .5)); display: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent), linear-gradient(180deg, transparent 0, rgba(0,0,0,.55) 45%, #000 calc(var(--franja) + .9rem), #000 calc(100% - 1rem), transparent 100%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent), linear-gradient(180deg, transparent 0, rgba(0,0,0,.55) 45%, #000 calc(var(--franja) + .9rem), #000 calc(100% - 1rem), transparent 100%); mask-composite: intersect; }
+.app:not([data-p="hoy"]) .estado, .estado[hidden] { display: none; }
+.estado .flecha .ic { width: 1.75rem; height: 1.75rem; }
+.estado .flecha .ic path { stroke-width: 2.1; }
+/* La tarjeta: solo lo vital (próxima y siguiente marea) + pie */
+.ev { padding: 0 0 .875rem; }
+.ev + .ev { border-top: .5px solid var(--linea); padding-top: .875rem; }
+.ev .fila { display: flex; justify-content: space-between; align-items: baseline; gap: .25rem .75rem; flex-wrap: wrap; }
+.ev .rot { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.ev .cuenta { margin: 0; font-size: 1.0625rem; font-weight: 500; color: var(--tx); }
+.ev .gran, .ev .med { margin: .125rem 0 0; line-height: 1.02; letter-spacing: -.01em; }
+.ev .gran { font-size: min(3.5rem, 18cqw); }
+.ev .med { font-size: min(2.5rem, 13cqw); }
+.pie-hoy { border-top: .5px solid var(--linea); padding: .75rem 0 .5rem; }
+.pie-hoy > * { margin-top: .375rem; }
+.pie-hoy > :first-child { margin-top: 0; }
+.pie-hoy .fecha { margin: 0; font-size: 1.0625rem; color: var(--tx); }
+.pie-hoy .fresco { margin-top: .375rem; }
+.pie-hoy .aviso, .pie-hoy .vigencia, .pie-hoy .nueva { margin-top: .375rem; }
+@media (max-height: 760px) { .ev .gran { font-size: min(3.25rem, 18cqw); } }
+
+/* ======================= r10b (19 oct): cristal transparente. Velo uniforme bajo (tope .28 / .38); la lectura la sostiene un refuerzo LOCAL bajo cada línea de texto vital ======================= */
+.panel.vidrio { box-shadow: inset 0 1px 0 var(--brillo-2); }
+.panel.vidrio::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(155deg, var(--brillo), var(--brillo-2) 32%, transparent 55%, var(--brillo-2) 82%, var(--brillo));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); mask-composite: exclude; }
+.app[data-p="hoy"] .ev, .app[data-p="hoy"] .pie-hoy { position: relative; isolation: isolate; text-shadow: var(--sombra-tx); }
+.app[data-p="hoy"] .estado { text-shadow: var(--sombra-tx); }
+/* Refuerzo local: banda a todo el ancho del texto con borde suave que cae FUERA del texto (el texto queda siempre en la zona llena). */
+.app[data-p="hoy"] .ev::before, .app[data-p="hoy"] .pie-hoy::before, .app[data-p="hoy"] .estado::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; left: -1.125rem; right: -1.125rem; top: -.9rem; bottom: 0;
+  background: rgba(var(--velo-rgb), var(--loc-alfa));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 .95rem, #000 calc(100% - .95rem), transparent), linear-gradient(180deg, transparent, #000 .85rem, #000 calc(100% - .7rem), transparent); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 .95rem, #000 calc(100% - .95rem), transparent), linear-gradient(180deg, transparent, #000 .85rem, #000 calc(100% - .7rem), transparent); mask-composite: intersect; }
+.app[data-p="hoy"] .estado::after { left: var(--margen); right: var(--margen); top: calc(var(--franja) - .85rem); }
+/* Curva y Días: una sola placa con mucho texto; ahí el velo va completo (total) porque no hay líneas sueltas que reforzar */
+.app:not([data-p="hoy"]) .panel.vidrio { --velo-alfa: var(--vid-total, var(--vid-alfa, .4)); }
+@media (prefers-reduced-transparency: reduce) { .app[data-p="hoy"] .ev::before, .app[data-p="hoy"] .pie-hoy::before, .app[data-p="hoy"] .estado::after { display: none; } }
+
+/* r10b-QA: con texto blanco (noche, lluvia, tormenta) la barra no baja de .5 de velo: la etiqueta "Hoy" sobre una nube clara daba 3,4 */
+:root[data-tinta="claro"] .barra { --velo-alfa: max(var(--vid-alfa-barra, .14), .5); }
+
+/* r10b-QA: la banda local de la línea de estado se difumina en las 4 orillas con un tramo largo (sin borde reconocible); el halo de texto hace el resto */
+.app[data-p="hoy"] .estado::after { left: calc(var(--margen) - .6rem); right: calc(var(--margen) - .6rem); top: calc(var(--franja) - 1.4rem); bottom: -.5rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 2.4rem, #000 calc(100% - 2.4rem), transparent), linear-gradient(180deg, transparent, #000 1.5rem, #000 calc(100% - 1.2rem), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 2.4rem, #000 calc(100% - 2.4rem), transparent), linear-gradient(180deg, transparent, #000 1.5rem, #000 calc(100% - 1.2rem), transparent); }
+.app[data-p="hoy"] .estado { text-shadow: var(--sombra-tx), var(--sombra-tx); }
+
+/* r10b-QA: con texto blanco el refuerzo local nunca baja de .28 (noche-lluvia tenía 0 y el pie daba 4,2) */
+:root[data-tinta="claro"] { --loc-alfa: max(var(--vid-loc, 0), .28); }

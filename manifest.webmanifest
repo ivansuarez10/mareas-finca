@@ -1,2 +1,2 @@
-{"name":"Mareas de la Finca","short_name":"Mareas","start_url":"./","scope":"./","display":"standalone","background_color":"#0b2d50","theme_color":"#0b2d50","lang":"es",
+{"name":"Finca Suárez","short_name":"Finca Suárez","start_url":"./","scope":"./","display":"standalone","background_color":"#0C2340","theme_color":"#0C2340","lang":"es-HN",
 "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},{"src":"icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}

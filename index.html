@@ -1,30 +1,191 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-HN" data-tinta="oscuro">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
-<meta name="theme-color" content="#0b2d50">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Mareas">
-<link rel="icon" href="icon-192.png" type="image/png">
+<!-- theme-color permanente en navy, como en beta; el manifest también dice #0C2340: sin salto de barra durante ni después de la portada. -->
+<meta name="theme-color" id="fs-tema" content="#0C2340">
+<title>Finca Suárez</title>
+<script>
+/* PORTADA, paso 1 (en línea, antes de cualquier hoja): decide completa | corta | ninguna con el sello local (14, retencion.md §1).
+   Sello: localStorage 'fs-entrada' = {d: último día local en que se vio la completa, t: última apertura}. Síncrono, con try/catch; si falla, corta.
+   ?portada=1 fuerza la completa y NO escribe el sello. Nada sale del teléfono. */
+(function(){var H=document.documentElement,FS=window.FS={modo:'corta',rm:false,total:5,n:0,hojas:false,app:false,listo:false,cb:[],
+chequea:function(){if(FS.listo)return;if(!FS.hojas&&FS.n>=FS.total){FS.hojas=true;if(FS.alHojas)FS.alHojas()}if(FS.hojas&&FS.app){FS.listo=true;FS.tListo=Math.round(performance.now());FS.cb.splice(0).forEach(function(f){f()})}},
+cuando:function(f){if(FS.listo)f();else FS.cb.push(f)}};
+try{localStorage.removeItem('mareas.entrada');localStorage.removeItem('mareas.splash')}catch(e){}   /* un solo sello: fs-entrada reemplaza a los dos viejos (20 min) */
+var rm=false;try{rm=matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+var forzar=false;try{forzar=/[?&]portada=1(&|$)/.test(location.search)}catch(e){}
+var h=location.hash.slice(1),profundo=h==='curva'||h==='dias',modo='corta';
+if(forzar)modo='completa';
+else{try{var ya=Date.now(),f=new Date(ya),dia=f.getFullYear()+'-'+(f.getMonth()+1)+'-'+f.getDate(),s=JSON.parse(localStorage.getItem('fs-entrada')||'null')||{},t=typeof s.t==='number'?s.t:0,d=s.d;
+if(d!==dia)modo='completa';else modo='corta';   /* Ivan (17 oct): el camaron carga CADA vez que se abre la app; la completa 1a vez del dia, la corta (0,6 s) las demas */
+if(profundo&&modo!=='ninguna')modo='ninguna';else if(modo==='completa')d=dia;
+localStorage.setItem('fs-entrada',JSON.stringify({d:d,t:ya}))}catch(e){modo='corta'}}
+if(rm&&modo==='corta')modo='completa';   /* reducir movimiento: la completa ya es quieta (0,5 s), asi tambien sale cada vez */
+FS.modo=modo;FS.rm=rm;H.setAttribute('data-fs',modo);
+if(modo!=='ninguna'){H.className+=' fs-portada';window.__fsRetiene=true}
+/* hoja que carga sin bloquear el primer pintado; FS cuenta las 6 */
+window.FSh=function(l){if(l.media!=='all')l.media='all';l.onload=l.onerror=null;FS.n++;FS.chequea()}})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Mareas de la Finca</title>
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="app.css">
+<link rel="preload" href="fuentes/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style id="fs-css">
+/* PORTADA, paso 2: HTML y CSS mínimos EN LÍNEA. Pinta antes que cualquier hoja o script (las hojas cargan sin bloquear, los scripts entran después del primer pintado). */
+@font-face{font-family:Figtree;src:url(fuentes/figtree-latin.woff2) format('woff2');font-weight:300 900;font-display:block}
+html{background:#0C2340}
+#fs-splash{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;font-family:Figtree,system-ui,sans-serif;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#fs-splash[hidden]{display:none}
+#fs-splash .fs-bg{position:absolute;inset:0;background:#0C2340}
+.fs-stage{position:relative;display:flex;flex-direction:column;align-items:center;transform:translateY(-34px)}
+.fs-cam{width:min(56vw,218px);aspect-ratio:35.5/25.5;will-change:transform}
+.fs-cam svg{width:100%;height:100%;display:block;overflow:visible}
+.fs-nombre{margin-top:26px;color:#F2E9D0;font-size:1.5rem;font-weight:500;letter-spacing:.06em;opacity:0}
+html[data-fs="ninguna"] .fs-stage{display:none}
+html[data-fs="corta"] .fs-cam{opacity:0}
+/* oleaje: dos ondas a distinta velocidad (una sola se lee a plantilla), solo transform */
+.fs-ola-a{animation:fs-deriva-a 1.8s linear infinite}
+.fs-ola-b{animation:fs-deriva-b 2.9s linear infinite reverse}
+@keyframes fs-deriva-a{to{transform:translateX(-10px)}}
+@keyframes fs-deriva-b{to{transform:translateX(-14px)}}
+html[data-rm] .fs-ola-a,html[data-rm] .fs-ola-b{animation:none}
+@media (prefers-reduced-motion:reduce){.fs-ola-a,.fs-ola-b{animation:none}}
+.fs-sprite{width:0;height:0;position:absolute}
+</style>
+<noscript><style>#fs-splash{display:none}</style><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css"></noscript>
+<link rel="stylesheet" href="tokens.css" media="print" onload="FSh(this)" onerror="FSh(this)">
+<link rel="stylesheet" href="app.css" media="print" onload="FSh(this)" onerror="FSh(this)">
+<link rel="stylesheet" href="mareas-cristal.css" media="print" onload="FSh(this)" onerror="FSh(this)">
+<link rel="stylesheet" href="clima-fondo.css" media="print" onload="FSh(this)" onerror="FSh(this)">
+<link rel="stylesheet" href="tinte-estados.css" media="print" onload="FSh(this)" onerror="FSh(this)">
+<link rel="preload" href="data.js" as="script"><link rel="preload" href="datos-vivos.js" as="script"><link rel="preload" href="mareas-cristal.js" as="script"><link rel="preload" href="clima-paletas.js" as="script"><link rel="preload" href="tinte-motor.js" as="script"><link rel="preload" href="clima-nubes.js" as="script"><link rel="preload" href="clima-fondo.js" as="script"><link rel="preload" href="clima-vivo.js" as="script"><link rel="preload" href="app.js" as="script">
+<!-- PRUEBA (retirar al integrar, ver INTEGRACION.md): ?tinta=claro|oscuro (OJO r10: oscuro = texto oscuro)  ?letra=100|130|150  ?sinblur=1  ?x=4 (reloj del cielo x4, SOLO demostración en video)  ?vel=1.5 (velocidad de nubes). Va en el head para aplicarse antes del primer pintado. -->
+<script>try{var q=new URLSearchParams(location.search),r=document.documentElement,t=q.get('tinta'),l=+q.get('letra');
+if(t==='claro'||t==='oscuro')r.dataset.tinta=t;if(l>=100&&l<=160)r.style.fontSize=l+'%';if(q.get('sinblur')==='1')r.dataset.sinBlur=''}catch(e){}</script>
+<!-- FIN PRUEBA -->
 </head>
 <body>
-<div class="app" id="app">
-<header class="barra" id="cab"></header>
-<main>
-<div id="r1"></div>
-<div id="r2"></div>
-</main>
-</div>
-<noscript><div class="app"><header class="barra"><h1 class="nombre">Mareas de la Finca</h1></header><main><section class="estado" role="note"><h2>No se pudieron mostrar los horarios</h2><p>Cerrar la app y abrirla otra vez. Si sigue igual, pedir que la actualicen.</p></section></main></div></noscript>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<svg class="fs-sprite" aria-hidden="true" focusable="false"><defs><path id="fs-p" d="M24.2917,23.1322C24.4916,23.1863 24.6826,23.2605 24.8639,23.3507C24.9608,23.0808 25.1049,22.8194 25.2911,22.5654L25.095,22.5228L25.3401,22.5441L25.5852,22.5505L25.8302,22.5462L26.0753,22.5292L26.3204,22.4972L26.5612,22.4525L26.7999,22.3949L27.0343,22.3267L27.2666,22.2436L27.4925,22.1498L27.712,22.0433L27.5394,22.1477C27.7243,23.3573 28.2861,24.3498 29.2273,25.1239L28.8607,25.2442L28.4451,25.355L28.0296,25.4424L27.6119,25.5085L27.1942,25.549L26.7765,25.5681L26.363,25.5639L25.9517,25.5383L25.5468,25.4893L25.1462,25.4189L24.754,25.3273L24.8116,25.2932C24.7233,24.9905 24.677,24.6951 24.6779,24.4082C24.4753,24.4312 24.2688,24.4356 24.0611,24.4227C22.5639,25.8437 20.0629,26.3894 19.4071,25.1355C19.3241,24.5759 19.6495,24.0755 20.2053,23.6961C19.2564,23.4626 18.5574,23.1312 18.4907,22.7721C18.676,22.4579 19.4441,22.3856 20.4137,22.4901C20.0247,21.9432 19.8902,21.362 20.1594,20.8648C21.2051,19.9098 23.3722,21.2818 24.2917,23.1322ZM29.2869,25.176L29.2273,25.1239L29.2699,25.1099ZM29.4489,20.5025C30.4179,21.5246 31.5929,22.1584 32.9749,22.4015L32.8075,22.6123L32.5667,22.8893L32.3152,23.1557L32.0531,23.4093L31.7824,23.6501L31.5032,23.8782L31.2155,24.0934L30.9193,24.2937L30.6167,24.4791L30.3077,24.6518L29.9944,24.8095L30.0626,24.7285C29.0866,23.9457 28.5041,22.9362 28.3151,21.7002L28.0935,21.8217L28.2554,21.713L28.4132,21.5958L28.5666,21.4722L28.7115,21.3422L28.8543,21.2079L28.9885,21.0651L29.1164,20.9181L29.24,20.7668L29.3551,20.6091L29.4638,20.445L29.5639,20.2787ZM24.5954,23.921C24.6294,24.0427 24.6566,24.1653 24.6769,24.2884C24.6768,24.157 24.689,24.0277 24.7117,23.9003C24.6747,23.9083 24.6363,23.9154 24.5954,23.921ZM24.6208,23.7808C24.6571,23.7998 24.6906,23.8195 24.7224,23.8395C24.7441,23.7141 24.776,23.5905 24.8197,23.469C24.7594,23.5757 24.693,23.6798 24.6208,23.7808ZM33.0462,22.4162L32.9749,22.4015L33.0376,22.3225ZM30.1883,18.2648C31.7208,18.6599 33.2373,18.6129 34.7379,18.122L34.751,18.024L34.8022,18.1029C34.7808,18.11 34.7594,18.1171 34.7379,18.122L34.702,18.3884L34.6381,18.7486L34.5592,19.1066L34.4655,19.4561L34.3589,19.8035L34.2396,20.1424L34.1075,20.4748L33.9604,20.8009L33.8027,21.1184L33.6322,21.4274L33.4489,21.7279L33.466,21.6256C32.0538,21.3897 30.8547,20.7518 29.8687,19.7119L29.7408,19.9442L29.8154,19.7779L29.8836,19.6074L29.9433,19.4348L29.9987,19.2601L30.0456,19.0832L30.0861,18.9063L30.118,18.7273L30.1436,18.5462L30.1607,18.3629L30.1713,18.1817L30.1756,17.9985ZM33.9033,12.9631L34.0563,13.2994L34.2097,13.683L34.3483,14.073L34.4676,14.4672L34.5678,14.8636L34.653,15.2621L34.7191,15.6607L34.7681,16.0613L34.7979,16.4619L34.8128,16.8626L34.8086,17.2611L34.7724,17.2078C33.2493,17.7164 31.7107,17.7704 30.1564,17.3698L30.1585,17.6234L30.1393,17.4295L30.1095,17.2377L30.0733,17.0459L30.0285,16.8583L29.9752,16.6708L29.9134,16.4875L29.8431,16.3064L29.7664,16.1274L29.6833,15.9526L29.5917,15.7821L29.4915,15.6159L29.6364,15.8247C31.3075,15.2392 32.7301,14.2858 33.9033,12.9631L33.8837,12.92L33.9455,12.9179C33.9318,12.9335 33.918,12.9491 33.9033,12.9631ZM15.0703,2.1005L16.0847,2.1452L16.9414,2.207L17.7811,2.2816L18.608,2.3711L19.4199,2.4734L20.2169,2.5885L21.0012,2.7185L21.7684,2.8613L22.5207,3.019L23.2559,3.1873L23.9762,3.3727L24.6795,3.5688L25.3635,3.7798L26.0327,4.0057L26.6827,4.2443L27.3156,4.4958L27.9294,4.7622L28.5261,5.0435L29.1015,5.3376L29.6577,5.6466L30.1926,5.9684L30.7083,6.3051L31.2049,6.6567L31.678,7.0212L32.1213,7.3941C31.9271,7.2317 31.638,7.2575 31.4755,7.4516C31.3131,7.6459 31.3389,7.9349 31.5331,8.0974L31.1026,7.7372L30.6572,7.3962L30.1905,7.0681L29.7046,6.7527L29.1953,6.45L28.6668,6.1581L28.1169,5.8789L27.5479,5.6146L26.9576,5.361L26.3502,5.1202L25.7237,4.8922L25.078,4.6791L24.4131,4.4766L23.7311,4.287L23.0321,4.1122L22.3182,3.9481L21.5851,3.7989L20.8371,3.6625L20.072,3.5389L19.292,3.4281L18.4971,3.3301L17.6873,3.247L16.8647,3.1767L16.0293,3.117L15.0426,3.0786L14.0772,3.0637L13.1374,3.0722L12.2274,3.1021L11.3494,3.1532L10.5013,3.2257L9.6893,3.3194L8.9136,3.4324L8.1784,3.5645L7.4836,3.7158L6.8315,3.8842L6.2263,4.0696L5.6679,4.2699L5.1607,4.4852L4.7068,4.7132L4.3061,4.9519L3.9652,5.1991L3.6796,5.4505L3.4558,5.7042L3.2896,5.9577L3.1767,6.2092L3.1127,6.4607L3.0978,6.7207L3.1362,7.002L3.215,7.2705L3.3258,7.5305L3.4665,7.7756L3.637,8.0079L3.8352,8.2252L4.0632,8.432L4.3211,8.6259L4.6045,8.8049L4.9156,8.969L5.2523,9.1203L5.6146,9.2546L5.9982,9.3739L6.4032,9.4783L6.8251,9.5657L7.2662,9.6382L7.7223,9.6936L8.1911,9.7319L8.6728,9.7554L9.1629,9.7639L9.6637,9.7554L10.1709,9.7298L10.6824,9.6893L11.1981,9.6339L11.7224,9.5614C11.4305,9.6014 11.2263,9.8705 11.2663,10.1624C11.3042,10.4387 11.5472,10.6364 11.8207,10.6225C11.8034,10.5178 11.7948,10.4113 11.7948,10.3031L11.7948,9.4506C10.0899,8.5982 7.5326,7.3195 4.1229,6.0409C7.5326,6.0409 11.3686,7.1064 14.3521,7.7457C17.3357,6.6802 21.1717,6.254 23.3198,7.3494C24.1367,9.3696 24.5068,11.4681 24.4301,13.6446C23.7158,13.823 22.9262,13.937 22.0662,13.9877C22.0645,14.0362 22.0549,14.0852 22.0369,14.1332L21.3976,15.8381C21.3661,15.9218 21.3114,15.9948 21.2399,16.0485L20.3874,16.6878C20.1803,16.8432 19.8864,16.8012 19.731,16.5941C19.5757,16.3869 19.6177,16.093 19.8248,15.9377L20.5677,15.3805L21.0767,14.023C20.5008,14.0285 19.8976,14.0091 19.2664,13.9629L18.6271,15.6676C18.5957,15.7513 18.541,15.8243 18.4694,15.878L17.617,16.5173C17.4098,16.6727 17.116,16.6307 16.9606,16.4236C16.8053,16.2164 16.8472,15.9226 17.0544,15.7672L17.7972,15.2101L18.2962,13.8795C17.8479,13.8376 17.3841,13.7806 16.9095,13.7128C16.7459,13.6895 16.5849,13.6635 16.4273,13.6346L15.8567,15.1561C15.8253,15.2399 15.7706,15.3129 15.699,15.3666L14.8466,16.0059C14.6394,16.1612 14.3455,16.1193 14.1902,15.9121C14.0348,15.705 14.0768,15.4111 14.284,15.2557L15.0268,14.6986L15.5021,13.4311C13.4479,12.8951 12.0266,11.8944 11.8212,10.6246L11.326,10.6909L10.7804,10.7463L10.237,10.7889L9.6978,10.8124L9.1629,10.8188L8.6365,10.8103L8.1208,10.7826L7.6115,10.7399L7.1171,10.676L6.6333,10.5971L6.1645,10.497L5.7105,10.3798L5.2737,10.2413L4.856,10.0836L4.4596,9.9045L4.0824,9.7021L3.7308,9.4783L3.4026,9.2311L3.1042,8.9583L2.8357,8.66L2.5991,8.3361L2.4031,7.9887L2.2454,7.6157L2.126,7.2108L2.0706,6.7569L2.0983,6.3051L2.2091,5.8704L2.3924,5.4612L2.646,5.0797L2.9593,4.726L3.3301,4.3999L3.7499,4.0994L4.2209,3.8203L4.7388,3.5624L5.3014,3.3258L5.9087,3.1106L6.5609,2.9145L7.2535,2.7376L7.9844,2.58L8.7559,2.4457L9.5614,2.3306L10.4032,2.2369L11.2791,2.1644L12.1848,2.1132L13.1204,2.0855L14.0815,2.0813ZM30.2211,8.8301L30.572,9.0606L30.9278,9.3185L31.2709,9.5891L31.6013,9.8726L31.9167,10.1688L32.2172,10.4778L32.5027,10.7996L32.7734,11.1299L33.0291,11.4709L33.2678,11.8204L33.4894,12.1806L33.4447,12.1742C32.2626,13.521 30.8263,14.49 29.1356,15.081L29.2741,15.2962L29.1548,15.1428L29.029,14.9957L28.8969,14.8551L28.7584,14.7187L28.6156,14.5887L28.4664,14.4651L28.3109,14.3479L28.1532,14.2392L27.9891,14.1348L27.8207,14.0389L27.6502,13.9515L27.8825,14.0517C29.0701,12.4925 29.8501,10.7522 30.2211,8.8301L30.2054,8.8198L30.2331,8.7751C30.2296,8.7936 30.226,8.8122 30.2211,8.8301ZM24.2554,7.2428L24.7519,7.2364L25.2442,7.2513L25.7322,7.2897L26.2181,7.3515L26.6976,7.4346L27.1707,7.539L27.6374,7.6648L28.0935,7.8118L28.5431,7.978L28.9822,8.1634L29.4084,8.368L29.4148,8.4106C29.0468,10.3542 28.264,12.1131 27.0663,13.6873L27.2858,13.7917L27.0919,13.7235L26.8958,13.6638L26.6976,13.6127L26.4973,13.57L26.2948,13.5381L26.0924,13.5125L25.8878,13.4997L25.6832,13.4933L25.4786,13.4997L25.274,13.5125L25.0716,13.5359L25.3103,13.4891C25.3884,11.3125 25.0183,9.2141 24.2,7.1938ZM13.0735,9.4506C13.0735,10.0391 13.5505,10.5162 14.139,10.5162C14.7275,10.5162 15.2046,10.0391 15.2046,9.4506C15.2046,8.8621 14.7275,8.3851 14.139,8.3851C13.5505,8.3851 13.0735,8.8621 13.0735,9.4506Z"/></defs></svg>
+<div id="fs-splash" role="img" aria-label="Finca Suárez"><div class="fs-bg"></div><div class="fs-stage"><div class="fs-cam" id="fs-cam"><svg id="fs-lienzo" viewBox="1 1.5 35.5 25.5" aria-hidden="true" focusable="false"><use class="fs-vaso" href="#fs-p" fill="#F2E9D0" fill-opacity=".16"/></svg></div><div class="fs-nombre" id="fs-nombre" aria-hidden="true">Finca Suárez</div></div></div>
+<script>
+/* PORTADA, paso 3: el motor (08 Motion, dirección A "La marea sube"; 09 lo integra). WAAPI en el compositor; solo el nivel del agua toca un atributo transform dentro de un SVG de ~220 px.
+   Tiempos (ms): completa 2 400 (tope 2 600) · corta 600 · toque = salto de 250 · reducir movimiento = quieta 500. Tope absoluto de seguridad: 4 000. Nunca bloquea los datos: la app arranca detrás. */
+(function(){'use strict';
+var H=document.documentElement,FS=window.FS,modo=FS.modo,rm=FS.rm,NS='http://www.w3.org/2000/svg',CREMA='#F2E9D0';
+var raiz=document.getElementById('fs-splash'),cam=document.getElementById('fs-cam'),nombre=document.getElementById('fs-nombre'),fondo=raiz.querySelector('.fs-bg'),lienzo=document.getElementById('fs-lienzo');
+var corta=modo==='corta',ninguna=modo==='ninguna',anims=[],terminado=false,saltado=false,vuelo=null,fadeando=false,rate=1,tw=0,t0=performance.now(),last=t0,raf=0,nivelFijo=null;
+function bez(x1,y1,x2,y2){var cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;function X(t){return((ax*t+bx)*t+cx)*t}function Y(t){return((ay*t+by)*t+cy)*t}
+return function(x){if(x<=0)return 0;if(x>=1)return 1;var a=0,b=1,t=x;for(var i=0;i<24;i++){t=(a+b)/2;if(X(t)<x)a=t;else b=t}return Y(t)}}
+var E_SUBE=bez(.30,.55,.25,1),E_BARRE=bez(.4,0,.2,1),E_VUELO='cubic-bezier(.55,.02,.15,1)';
+function clamp01(x){return x<0?0:x>1?1:x}
+var T={ini:150,finA:1250,amp:200,nombreIn:500,nombreDur:500,vuelo:1550,vueloDur:850,nombreOut:180,fondoDe:200,fondoDur:550,llenoDur:400,placaDur:330};
+if(corta)T={ini:0,finA:0,amp:0,vuelo:100,vueloDur:500,nombreOut:1,fondoDe:120,fondoDur:330,llenoDur:1,placaDur:250};
+var PISO=.12,TECHO=.92,Y_FONDO=26.7,Y_TOPE=1.9;
+function el(tag,at,par){var n=document.createElementNS(NS,tag);for(var k in at)n.setAttribute(k,at[k]);if(par)par.appendChild(n);return n}
+function onda(wl,amp,w0,w1){var d='M'+w0+' 0',n=Math.ceil((w1-w0)/(wl/2));d+='q'+(wl/4)+' '+(-amp)+' '+(wl/2)+' 0';for(var i=1;i<n;i++)d+='t'+(wl/2)+' 0';return d+'L'+w1+' 0L'+w0+' 0Z'}
+function A(nodo,kf,op){var a=nodo.animate(kf,Object.assign({fill:'both',easing:'linear'},op));anims.push(a);return a}
+var vaso=lienzo.querySelector('.fs-vaso'),lleno=null,agua=null,amps=[];
+if(!ninguna){
+  lleno=el('use',{href:'#fs-p',fill:CREMA,opacity:'0'},lienzo);   /* el camarón completo: el cierre y la versión corta */
+  if(!corta&&!rm){
+    var defs=el('defs',{},lienzo),cp=el('clipPath',{id:'fs-clip'},defs);el('use',{href:'#fs-p'},cp);
+    var g=el('g',{'clip-path':'url(#fs-clip)'},lienzo);agua=el('g',{transform:'translate(0 29)'},g);
+    el('rect',{x:'-20',y:'0',width:'80',height:'40',fill:CREMA},agua);   /* el cuerpo del agua no se estira: el nivel es el nivel */
+    var a2=el('g',{},agua),a1=el('g',{},agua);amps=[a2,a1];
+    el('path',{d:onda(14,.9,-16,52),fill:CREMA,'fill-opacity':'.5','class':'fs-ola-b'},a2);
+    el('path',{d:onda(10,1.1,-12,50),fill:CREMA,'class':'fs-ola-a'},a1);
+    lienzo.insertBefore(defs,lienzo.firstChild);
+  }
+}
+function fin(){if(terminado)return;terminado=true;cancelAnimationFrame(raf);
+  anims.forEach(function(a){try{a.cancel()}catch(e){}});
+  raiz.hidden=true;H.classList.remove('fs-portada');
+  var ap=document.getElementById('app');if(ap)ap.inert=false;
+  window.__fsRetiene=false;
+  FS.tFin=Math.round(performance.now())}
+setTimeout(fin,4000);   /* red de seguridad: la portada nunca pasa de 4 s, haya llegado o no la app */
+function marca(){return document.querySelector('.cab__marca svg')}
+function fade(ms,delay){if(fadeando)return;fadeando=true;A(raiz,[{opacity:1},{opacity:0}],{delay:delay||0,duration:ms}).finished.then(fin,function(){})}
+
+/* ---- ninguna: la app abre directo; el telón navy solo cubre hasta que haya hojas y app (0 s añadidos) ---- */
+if(ninguna){FS.cuando(function(){fade(rm?1:120)});return}
+
+/* ---- reducir movimiento: camarón completo, quieto; solo se desvanece (la opacidad no es movimiento) ---- */
+if(rm){lleno.setAttribute('opacity','1');if(vaso)vaso.style.display='none';nombre.style.opacity='1';
+  raiz.addEventListener('pointerdown',function(e){e.stopPropagation();if(e.cancelable)e.preventDefault();FS.cuando(function(){fade(200,0)})});
+  ['pointerup','click','touchstart','touchend','mousedown','mouseup'].forEach(function(t){raiz.addEventListener(t,function(e){e.stopPropagation();if(e.cancelable)e.preventDefault()},{passive:false})});
+  setTimeout(function(){FS.cuando(function(){fade(200,0)})},300);
+  return}
+
+/* ---- con movimiento ---- */
+if(corta){lleno.setAttribute('opacity','1');if(vaso)vaso.style.display='none';cam.style.opacity='0';A(cam,[{opacity:0},{opacity:1}],{delay:0,duration:80});nombre.style.opacity='0'}
+else A(nombre,[{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{delay:T.nombreIn,duration:T.nombreDur,easing:'cubic-bezier(.16,1,.3,1)'});
+
+/* el vuelo se crea cuando la app ya pintó su placa (destino real); w = cuánto falta para su hora en la línea de tiempo (las animaciones esperan quietas en su primer cuadro) */
+var orig=cam.getBoundingClientRect(),dest='';
+function kf(dx,dy,sc){return[{transform:'translate(0,0) scale(1)'},{transform:'translate('+dx+'px,'+dy+'px) scale('+sc+')'}]}
+/* el destino puede moverse (el panel se acomoda cuando llegan los datos): se vuelve a medir en cada cuadro del vuelo y se corrige sin saltos */
+function sigueDestino(){var m=marca();if(!m||!vuelo)return;var d=m.getBoundingClientRect(),dx=d.left-orig.left,dy=d.top-orig.top,sc=d.width/orig.width,k=dx+','+dy+','+sc;
+  if(k!==dest&&(Math.abs(dx-dest.split(',')[0])>.25||Math.abs(dy-dest.split(',')[1])>.25)){dest=k;try{vuelo.effect.setKeyframes(kf(dx,dy,sc))}catch(e){}}}
+function crearVuelo(w){
+  var m=marca(),placa=document.querySelector('.cab__marca');
+  if(!m){FS.via='fade';fade(300,w);return}
+  FS.via='vuelo';
+  var d=m.getBoundingClientRect(),sc=d.width/orig.width,dx=d.left-orig.left,dy=d.top-orig.top;
+  cam.style.transformOrigin='0 0';
+  vuelo=A(cam,kf(dx,dy,sc),{delay:w,duration:T.vueloDur,easing:E_VUELO});
+  dest=dx+','+dy+','+sc;
+  if(!corta){A(lleno,[{opacity:0},{opacity:1}],{delay:w,duration:T.llenoDur,easing:'ease-out'});A(nombre,[{opacity:1},{opacity:0}],{delay:w,duration:T.nombreOut})}
+  A(fondo,[{opacity:1},{opacity:0}],{delay:w+T.fondoDe,duration:T.fondoDur,easing:'ease-in-out'});
+  if(placa)A(placa,[{opacity:0},{opacity:1}],{delay:w+T.vueloDur*(corta?.35:.55),duration:T.placaDur,easing:'ease-out'});
+  vuelo.finished.then(fin,function(){});
+  if(saltado)acelera();
+}
+/* toque: el camarón viaja ya al encabezado en 250 ms (nunca un corte seco) */
+function acelera(){rate=6;anims.forEach(function(a){var e=a.effect&&a.effect.getTiming();if(!e||a.effect.target===raiz)return;var ct=a.currentTime||0,tg=a.effect.target;
+  if(tg===nombre){a.currentTime=Math.max(ct,e.delay||0);a.updatePlaybackRate(8);return}
+  if(ct<(e.delay||0))a.currentTime=e.delay;var resto=(e.delay+e.duration)-a.currentTime;if(resto>0)a.updatePlaybackRate(Math.max(1,resto/250))})}
+function toque(e){e.stopPropagation();if(e.cancelable)e.preventDefault()}
+['pointerup','click','touchstart','touchend','mousedown','mouseup'].forEach(function(t){raiz.addEventListener(t,toque,{passive:false})});   /* el telón es el único blanco hasta fin(): el toque que salta no llega a ningún botón del panel */
+raiz.addEventListener('pointerdown',function(e){toque(e);if(terminado||saltado)return;saltado=true;if(vuelo||fadeando)acelera()});
+addEventListener('keydown',function(e){if(!terminado&&(e.key==='Enter'||e.key===' '||e.key==='Escape')&&!saltado){saltado=true;if(vuelo||fadeando)acelera()}});
+
+/* ---- el agua ---- */
+function nivelVis(){var f=window.__nivelAhora,n=null;try{n=f?f():null}catch(e){}return n==null?null:PISO+(TECHO-PISO)*clamp01(n)}
+var tarde=-1,v0=0,cur=null;
+/* nivel real o nada: sin dato no hay agua ni marca (nunca "lleno" falso); si llega tarde, el agua sube desde donde esté hasta el nivel real */
+function yAgua(ms){var a=T.ini,b=T.finA,L=nivelFijo;
+  if(L==null){L=nivelVis();if(L!=null){nivelFijo=L;if(ms>400){tarde=ms;v0=cur==null?0:cur}}}
+  if(L==null){cur=null;return null}
+  var v;if(tarde>=0)v=v0+(L-v0)*E_BARRE(clamp01((ms-tarde)/500));
+  else{var p=E_SUBE(clamp01((ms-a)/(b-a)));v=Math.max(PISO*p,L*p)}
+  cur=v;return v}
+function pinta(ms){var v=yAgua(ms),y=v==null?29:Y_FONDO-(Y_FONDO-Y_TOPE)*v,fe=tarde>=0?tarde+500:T.finA,amp=ms<fe?1:1-E_BARRE(clamp01((ms-fe)/T.amp));
+  agua.setAttribute('transform','translate(0 '+(ms<T.ini?29:y).toFixed(3)+')');
+  for(var i=0;i<amps.length;i++)amps[i].setAttribute('transform','scale(1 '+amp.toFixed(3)+')')}
+function tick(now){var dt=now-last;last=now;if(dt<0)dt=0;tw+=dt*rate;var ms=now-t0;
+  if(agua&&tw<T.vuelo+100)pinta(tw);
+  if(!vuelo&&!fadeando){
+    if(FS.listo)crearVuelo(Math.max(0,T.vuelo-ms))   /* en cuanto la app pintó su placa: así el costo de medir y de promover capas cae temprano, no en el arranque del vuelo */
+    else if(ms>2600)fade(300,0)}   /* la app no llegó: la portada no se alarga más de 2,6 s */
+  if(vuelo&&!terminado)sigueDestino();
+  if(!terminado)raf=requestAnimationFrame(tick)}
+if(agua)pinta(0);
+raf=requestAnimationFrame(tick);
+})();
+</script>
+<div id="app" class="app"><noscript><p style="padding:1.5rem;font:400 1.25rem sans-serif">Esta app necesita JavaScript para mostrar las mareas.</p></noscript></div>
+<script>
+/* PORTADA, paso 4: las hojas ya cargan solas (media=print); los scripts de la app entran DESPUÉS del primer pintado y de las hojas, en orden, sin bloquear. Los datos cargan detrás: nada espera a la portada. */
+(function(){var FS=window.FS,S=['data.js','datos-vivos.js','mareas-cristal.js','clima-paletas.js','tinte-motor.js','clima-nubes.js','clima-fondo.js','clima-vivo.js','app.js','clima-prueba.js'],pintado=false,lanzado=false;
+function lanza(){if(lanzado||!pintado||!FS.hojas)return;lanzado=true;var n=S.length;
+S.forEach(function(u){var s=document.createElement('script');s.src=u;s.async=false;s.onload=s.onerror=function(){if(--n===0){FS.app=true;FS.chequea()}};document.body.appendChild(s)})}
+var ap=document.getElementById('app');if(ap&&!FS.tFin)ap.inert=true;   /* mientras haya telón, el teclado no llega a la app de abajo */
+FS.alHojas=lanza;
+requestAnimationFrame(function(){setTimeout(function(){pintado=true;lanza()},0)});
+setTimeout(function(){if(!FS.hojas){FS.hojas=true;lanza()}},2500)})();
+</script>
 </body>
 </html>

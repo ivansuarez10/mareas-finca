@@ -1,0 +1,27 @@
+/* MareaCristal · solo transform y opacity. Todo lo que oculta o mueve va dentro de no-preference:
+   con "Reducir movimiento" (o sin JS) nada queda oculto y la app se ve completa. Los colores no se tocan. */
+
+/* AJUSTE DEL 09 (ronda 5): la tarjeta del nombre cae sobre la zona del panel; con el panel desde 0,2 s se veían encimados. Ahora la tarjeta entra, se queda y se apaga antes de 0,8 s
+   y el panel sube entre 0,8 y 1,5 s (ms = 1500 en app.js). Pasó de 1,3 s a 1,5 s en total; cualquier toque la salta.
+   1. Entrada (clase .entrando en la raíz, la pone MareaCristal.entrada; dura menos que sus ms para que al quitarla no haya salto).
+   Foto y tarjeta del nombre (.apertura) primero; el panel de cristal sube 18 px y aparece entre 0,2 y 1,2 s. */
+@media (prefers-reduced-motion: no-preference) {
+  .entrando .apertura { animation: mc-nombre 1.1s ease both; }
+  .entrando .barra { animation: mc-panel .7s cubic-bezier(.2, .75, .2, 1) .95s both; }
+  .entrando .panel { animation: mc-panel .7s cubic-bezier(.2, .75, .2, 1) .8s both; will-change: transform, opacity; }
+}
+@keyframes mc-nombre { 0% { opacity: 0; } 20%, 45% { opacity: 1; } 70%, 100% { opacity: 0; } }
+@keyframes mc-panel { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* 2. Punto de frescura (Hoy): solo con data-estado="vivo" en un ancestro. Opacidad lenta, 2 de cada 3 s se ve entero.
+   Corre en el compositor y se pausa solo con la pestaña oculta. En reciente y guardado no hay punto. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-estado="vivo"] .punto { animation: mc-late 3.2s ease-in-out infinite; }
+}
+@keyframes mc-late { 50% { opacity: .35; } }
+
+/* 3. Halo del punto "Ahora" (Curva): late 4 veces al entrar a la pantalla y se calma. El span lo posiciona app.js con left/top. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-estado="vivo"] .mv-halo { animation: mc-halo 3.6s ease-in-out 4; }
+}
+@keyframes mc-halo { 50% { transform: scale(1.3); opacity: .06; } }
