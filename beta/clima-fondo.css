@@ -24,6 +24,8 @@
 .cf-estrellas::after { content: ""; position: absolute; inset: 0; background: var(--est) 0 0 / 100% 100%; }   /* 09 r7: quietas (el 14 pidió sin parpadeo perceptible) */
 
 .cf-nubes, .cf-velo { inset: 0; }
+.cf-glints { left: 0; top: 0; right: 0; height: 160px; overflow: hidden; }   /* r10: destellos del sol, solo en la banda de cielo */
+.cf-nubes .cn-lienzo { position: absolute; inset: 0; }
 .cf-nubes { overflow: hidden; }
 .cf-nube { position: absolute; opacity: 0; will-change: transform; transition: opacity var(--cf-fundido) ease-in-out; }   /* r8: cada nube es un canvas (capa de textura) */
 

@@ -124,36 +124,45 @@ let acercaAbierto = false, vista = 'hoy', nVisibles = DIAS_PASO, hayNueva = fals
 /* Ronda 7: el fondo ya no es una foto. Línea de honestidad y atribución del clima (el enlace es solo un enlace: no es una petición de la app). */
 T.clima = 'El fondo refleja el clima de ahora en la costa de San Lorenzo, Valle. Es aproximado y no es una alerta oficial.';
 T.climaCredito = 'Datos del clima: <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (<a href="https://open-meteo.com/en/license" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>), adaptados para mostrar el fondo.';
-app.innerHTML = '<div class="fondo" id="fondo"></div><div class="apertura" aria-hidden="true"><div class="vidrio"><div class="vf"></div><div class="tinte"></div></div><b>' + T.nombre + '</b><span>' + T.apertura + '</span></div>' +
-  '<div class="pila" id="pila"><main class="panel" id="panel"><div class="vidrio" id="vidrio" aria-hidden="true"><div class="vf"></div><div class="tinte"></div></div>' +
+const MARCA = '<svg viewBox="1 1.5 35.5 25.5" focusable="false"><use href="#fs-p" fill="#F2E9D0"/></svg>';
+app.innerHTML = '<div class="fondo" id="fondo"></div>' +
+  '<header class="cab vidrio" id="cab"><span class="cab__marca" aria-hidden="true">' + MARCA + '</span><h1>' + T.nombre + '</h1></header>' +
+  '<div class="pila" id="pila"><p class="estado" id="estado" hidden></p><main class="panel vidrio" id="panel">' +
   '<div class="cont" id="hoja" tabindex="-1"><div class="vista" id="vista"></div></div><div class="pie" id="pie"></div></main>' +
-  '<nav class="barra" id="barra" aria-label="Pantallas">' + ['hoy', 'curva', 'dias'].map(k => '<a href="#' + k + '" data-k="' + k + '" aria-label="' + T.tabsAria[k] + '">' + ic('t_' + k) + '<span>' + T.tabs[k] + '</span></a>').join('') + '</nav></div>';
-const pieEl = document.getElementById('pie'), hoja = document.getElementById('hoja'), vistaEl = document.getElementById('vista'), panel = document.getElementById('panel'), pila = document.getElementById('pila'), barra = document.getElementById('barra');
+  '<nav class="barra vidrio" id="barra" aria-label="Pantallas">' + ['hoy', 'curva', 'dias'].map(k => '<a href="#' + k + '" data-k="' + k + '" aria-label="' + T.tabsAria[k] + '">' + ic('t_' + k) + '<span>' + T.tabs[k] + '</span></a>').join('') + '</nav></div>';
+const pieEl = document.getElementById('pie'), hoja = document.getElementById('hoja'), vistaEl = document.getElementById('vista'), panel = document.getElementById('panel'), pila = document.getElementById('pila'), barra = document.getElementById('barra'), estadoEl = document.getElementById('estado');
 
 /* ---------- FONDO VIVO (ronda 7) ----------
    clima-vivo.js trae el clima (Open-Meteo, copia guardada, caduca a los 150 min) y clima-fondo.js pinta el cielo. Si algo falla, queda el degradado neutro de tokens.css: nunca en blanco.
    El motor necesita saber cuánto cielo queda libre sobre el panel (ahí se ve la lluvia): se mide con el panel. */
 const fondoEl = document.getElementById('fondo');
 let CV = null;
-if (window.ClimaVivo && window.ClimaFondo) { try { CV = ClimaVivo.iniciar({ contenedor: fondoEl, paletas: window.ClimaPaletas }); } catch (e) { CV = null; } }
-const libre = () => { if (CV) CV.motor.setLibre(panel.getBoundingClientRect().top - fondoEl.getBoundingClientRect().top); };
-libre(); setTimeout(libre, 1800);   // 1,8 s: termina la entrada del primer uso del día (el panel sube 18 px)
-if (window.ResizeObserver) { const rl = new ResizeObserver(libre); rl.observe(panel); rl.observe(app); }
-
-/* ---------- CRISTAL LÍQUIDO (ronda 6) ----------
-   La barra es siempre una píldora de CristalLiquido (svg en Chromium; esmerilado o sólido donde no hay filtros SVG).
-   El panel solo cambia su cristal horneado por el líquido si el camino es svg Y PANEL_LIQUIDO está encendido (ver notas-prototipador.md, medición CPU x4).
-   Pruebas: ?cristal=svg|esmerilado|solido fuerza el camino; ?panel=horneado|liquido fuerza el panel. Se retiran al integrar (INTEGRACION.md). */
-/* Límite fijado por la medición (notas-prototipador.md): barra + panel = 2 superficies, nunca más (la tarjeta de apertura sigue horneada). Teléfonos que se declaran de poca memoria (menos de 4 GB) conservan el panel horneado de la ronda 5. */
-const PANEL_LIQUIDO = !(navigator.deviceMemory && navigator.deviceMemory < 4);
-const CL = window.CristalLiquido, CAMINO = CL ? CL.detectar() : 'solido';
-const panelPide = (/[?&]panel=(horneado|liquido)/.exec(location.search) || [])[1];
-const PANEL_LIQ = CAMINO === 'svg' && (panelPide ? panelPide === 'liquido' : PANEL_LIQUIDO);
-if (CL) {
-  CL.crear(barra, { preset: 'barra', radio: 999, calma: 6, margenCentro: 0.3 });   // calma 6 px en el centro de la píldora: las rayas no pasan detrás de las etiquetas (14)
-  if (PANEL_LIQ) { const v = document.getElementById('vidrio'); v.textContent = ''; CL.crear(v, { preset: 'panel', radio: 28, margenCentro: 0.3 }); }   // el desenfoque del centro llega completo a ~22 px del filo, antes de donde empieza el texto (24 px)
+/* Ronda 10: la entrada del camarón (r9) manda: el cielo se queda en su primer cuadro hasta que ella termina (completa 2,4 s, corta 0,6 s, desde que abrió la página). El motor lo recibe como nubesRetardo. */
+if (window.ClimaFondo && ClimaFondo.DEF) {
+  const entra = window.FS ? (FS.modo === 'completa' ? 2400 : FS.modo === 'corta' ? 600 : 0) : 0;
+  ClimaFondo.DEF.nubesRetardo = Math.max(0, Math.round(entra - performance.now()));
 }
-app.dataset.cristal = CAMINO; app.dataset.panel = PANEL_LIQ ? 'liquido' : 'horneado';
+if (window.ClimaVivo && window.ClimaFondo) { try { CV = ClimaVivo.iniciar({ contenedor: fondoEl, paletas: window.ClimaPaletas }); } catch (e) { CV = null; } }
+/* El motor necesita dos medidas del layout real (px desde el borde de arriba del fondo, que sobrepasa la pantalla):
+   libre = hasta dónde llega el cielo limpio (donde empieza la línea de estado en Hoy, o el panel en Curva y Días): ahí viven lluvia, sol y rayo.
+   setCalma(y0, y1) = el rectángulo del dato vital (línea de estado + tarjeta + barra): ahí el motor no mueve nada con contraste, y mide el píxel más claro y el más oscuro para calcular el velo. */
+let ultMedida = '';
+const libre = () => {
+  if (!CV) return;
+  const f = fondoEl.getBoundingClientRect(), hoy = vista === 'hoy' && !estadoEl.hidden;
+  const y0 = (hoy ? estadoEl : panel).getBoundingClientRect().top - f.top, y1 = pila.getBoundingClientRect().bottom - f.top;
+  const k = Math.round(y0) + '|' + Math.round(y1) + '|' + Math.round(f.height);
+  if (k === ultMedida) return; ultMedida = k;
+  CV.motor.setLibre(y0); CV.motor.setCalma(y0, y1);
+};
+libre(); setTimeout(libre, 1800);   // 1,8 s: la placa del encabezado y el panel ya están en su sitio
+if (window.ResizeObserver) { const rl = new ResizeObserver(libre); rl.observe(panel); rl.observe(estadoEl); rl.observe(app); }
+/* el motor avisa si el teléfono no sostiene los cuadros (cf:nivel; también queda data-nivel en .cf): el cristal suelta el desenfoque (app.css) */
+fondoEl.addEventListener('cf:nivel', e => { app.dataset.nivel = e.detail.nivel; });
+const _nv = fondoEl.querySelector('.cf'); if (_nv && _nv.dataset.nivel) app.dataset.nivel = _nv.dataset.nivel;
+
+/* ---------- CRISTAL (ronda 10) ----------
+   Ronda 10: ya no hay CristalLiquido (refracción SVG de la r6) ni copia horneada del fondo: el cristal es backdrop-filter simple, definido en app.css. cristal-liquido.* sigue en la carpeta pero no se carga. */
 /* alto de la píldora: lo usan el tope del panel y la copia horneada del fondo (CSS var --barra-h) */
 const mideBarra = () => pila.style.setProperty('--barra-h', barra.offsetHeight + 'px');
 mideBarra(); if (window.ResizeObserver) new ResizeObserver(mideBarra).observe(barra);
@@ -172,18 +181,21 @@ function vigenciaHtml() {
   const quedan = Math.round((M.ultimoDia - diaIni(AH)) / DIA);
   return quedan <= AVISO_DIAS ? '<p class="vigencia">' + ic('fin') + '<span>' + T.vigencia(diaCorto(M.ultimoDia)) + '</span></p>' : '';
 }
+let estadoHtml = '';   // ronda 10: la línea de estado ya no va dentro de la tarjeta; flota sobre el cielo (#estado en .pila)
 function vistaHoy() {
+  estadoHtml = '';
   const raro = estadoFechas(); if (raro) return cajaFin(raro.t, raro.x) + frescoHtml();
   const sig = M.ev.find(e => e.t > AH);
   if (!sig) return cajaFin(T.sinMasT, T.sinMasHoy) + frescoHtml() + '<p class="aviso">' + T.aviso + '</p>';
   const otro = M.ev.find(e => e.t > AH && e.k !== sig.k), hoyI = diaIni(AH);
   const dia = e => (diaIni(e.t) > hoyI ? ' · ' + T.manana : '');
   const sube = sig.k === 'P';
-  return '<header class="cab"><span class="cab__marca" aria-hidden="true"><svg viewBox="1 1.5 35.5 25.5" focusable="false"><use href="#fs-p" fill="#F2E9D0"/></svg></span><h1>' + T.nombre + '</h1><span id="fecha"></span></header><p class="estado">' + flecha(sig.k, 'circ') + '<span>' + (sube ? T.sube : T.baja) + '</span></p>' +
-    '<div class="hero" role="group" aria-label="Próxima ' + T[sig.k] + ', ' + horaTxt(sig.t) + ', ' + cuentaTxt(sig.t - AH) + '"><p class="rot">' + T[sig.k] + dia(sig) + '</p><p class="gran">' + horaHtml(sig.t) + '</p><p class="cuenta">' + cuentaTxt(sig.t - AH) + '</p></div>' +
-    (otro ? '<div class="seg" role="group" aria-label="Siguiente ' + T[otro.k] + ', ' + horaTxt(otro.t) + '"><p class="rot">' + T[otro.k] + dia(otro) + '</p><p class="med">' + horaHtml(otro.t) + '</p></div>' : '') +
-    frescoHtml() + '<p class="aviso">' + T.aviso + '</p>' + vigenciaHtml() +
-    '<details class="acerca" id="acerca"><summary>' + T.acerca + ic('der') + '</summary><p class="fuente">' + T.fuente + '</p>' + '<p class="fuente">' + T.clima + '</p><p class="credito">' + T.climaCredito + '</p>' + '</details>' + (hayNueva ? '<p class="nueva">' + T.nueva + '</p>' : '');
+  estadoHtml = flecha(sig.k, 'circ') + '<span>' + (sube ? T.sube : T.baja) + '</span>';
+  /* Tarjeta (05): la próxima marea grande con su cuenta al lado, la siguiente más chica; después el pie (fecha y hora, frescura, aviso, Acerca de). Mismos textos que r9; la fecha pasó del encabezado al pie. */
+  return '<div class="ev p hero" role="group" aria-label="Próxima ' + T[sig.k] + ', ' + horaTxt(sig.t) + ', ' + cuentaTxt(sig.t - AH) + '"><div class="fila"><p class="rot">' + T[sig.k] + dia(sig) + '</p><p class="cuenta">' + cuentaTxt(sig.t - AH) + '</p></div><p class="gran">' + horaHtml(sig.t) + '</p></div>' +
+    (otro ? '<div class="ev s seg" role="group" aria-label="Siguiente ' + T[otro.k] + ', ' + horaTxt(otro.t) + '"><div class="fila"><p class="rot">' + T[otro.k] + dia(otro) + '</p></div><p class="med">' + horaHtml(otro.t) + '</p></div>' : '') +
+    '<div class="pie-hoy"><p class="fecha" id="fecha"></p>' + frescoHtml() + '<p class="aviso">' + T.aviso + '</p>' + vigenciaHtml() +
+    '<details class="acerca" id="acerca"><summary>' + T.acerca + ic('der') + '</summary><p class="fuente">' + T.fuente + '</p>' + '<p class="fuente">' + T.clima + '</p><p class="credito">' + T.climaCredito + '</p>' + '</details>' + (hayNueva ? '<p class="nueva">' + T.nueva + '</p>' : '') + '</div>';
 }
 function listaDia(ini, sigT) {
   return M.ev.filter(e => e.t >= ini && e.t < ini + DIA).map(e =>
@@ -279,22 +291,23 @@ function curva(host, lectura) {
 
 /* ---------- pintar ---------- */
 function marcarTabs() { barra.querySelectorAll('a').forEach(a => { if (a.dataset.k === vista) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); }
-function pintaFecha() { const f = document.getElementById('fecha'); if (f) f.textContent = fechaTxt(AH) + (vista === 'hoy' ? ' · ' + horaTxt(AH) : ''); }
+function pintaFecha() { const f = document.getElementById('fecha'); if (f) f.textContent = fechaTxt(AH) + ' · ' + horaTxt(AH); }
 function render() {
   const sc = hoja.scrollTop;
   app.dataset.estado = R.estado; app.dataset.p = vista;
   panel.classList.toggle('alta', vista === 'dias' && !!M && !estadoFechas()); panel.classList.toggle('hoy', vista === 'hoy');
   curvaH = null;
-  /* Ronda 9: si la portada está volando hacia la placa del encabezado, esa placa (con su animación) se conserva al repintar: los datos nuevos entran sin mover el destino. */
-  const placaVieja = window.__fsRetiene ? document.querySelector('.cab__marca') : null;
+  /* Ronda 10: la pastilla del encabezado (con la placa a la que vuela el camarón de la portada, r9) vive fuera de la vista y no se repinta: el destino del vuelo no se mueve. */
+  estadoHtml = '';
   vistaEl.innerHTML = vista === 'curva' ? vistaCurva() : vista === 'dias' ? vistaDias() : vistaHoy();
-  if (placaVieja) { const nueva = document.querySelector('.cab__marca'); if (nueva) nueva.replaceWith(placaVieja); }
+  estadoEl.innerHTML = vista === 'hoy' ? estadoHtml : ''; estadoEl.hidden = !(vista === 'hoy' && estadoHtml);
   const ac = document.getElementById('acerca'); if (ac) { ac.open = acercaAbierto; ac.addEventListener('toggle', () => { acercaAbierto = ac.open; }); }
   marcarTabs(); pintaFecha();
   pieEl.innerHTML = vista === 'hoy' ? '' : frescoHtml();   // en Curva y Días la frescura queda fija al pie, siempre visible (también a letra 150 %)
   if (vista === 'curva' && M && !estadoFechas()) curvaH = curva(document.getElementById('graf'), document.getElementById('lectura'));
   const mas = document.getElementById('mas'); if (mas) mas.onclick = () => { nVisibles += DIAS_PASO; render(); const f = vistaEl.querySelectorAll('.dia')[nVisibles - DIAS_PASO]; if (f) { f.setAttribute('tabindex', '-1'); f.focus({ preventScroll: false }); } };
   hoja.scrollTop = sc;
+  libre();
 }
 /* cada minuto: no se reconstruye la curva ni se pierde el foco; Hoy se repinta entero (no tiene controles) */
 function tick() {

@@ -1,7 +1,6 @@
-/* Mareas de la Finca · piel "Cristal sobre agua" (05 diseño, 09 prototipo, ronda 5).
-   Cristal HORNEADO: el panel no usa backdrop-filter. Lleva una copia del mismo fondo (.vf), alineada con la pantalla,
-   desenfocada UNA vez (filter estático, sin animar) y cubierta por un tinte que garantiza el contraste.
-   Si el navegador no sabe desenfocar, el tinte solo (72 % opaco) ya se ve igual de calmado: es el fallback. */
+/* Mareas de la Finca · piel "Cristal del cielo" (05 diseño, 09 prototipo; ronda 10, 17 oct 2026; antes "Cristal sobre agua" r5-r9).
+   El cristal es un velo del tono del cielo (alfa por estado, lo calcula el motor) con backdrop-filter simple (<= 10 px) y borde de 0,5 px:
+   se ve el cielo moverse detrás. Hoy = pastilla + línea de estado flotando + tarjeta con lo vital + barra. */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; font-family: var(--font); font-weight: 400; color: var(--tx); background: #0d1d22; min-height: 100dvh; }
@@ -11,77 +10,52 @@ button { font: inherit; color: inherit; }
 
 /* ---------- pantalla ---------- */
 .app { position: relative; width: min(100%, 440px); height: 100dvh; margin: 0 auto; overflow: hidden; container-type: size; isolation: isolate; }
-.fondo, .vf { position: absolute; background: var(--fondo); }
+.fondo { position: absolute; background: var(--fondo); }
 .fondo { inset: calc(-1 * var(--sobre)); }
 @media (min-width: 700px) {
   body { display: grid; place-items: center; background: #0d1d22; }
   .app { height: min(calc(100dvh - 48px), 900px); border-radius: 40px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
 }
 
-/* ---------- el panel de cristal: UNO por pantalla ---------- */
-/* RONDA 6: la barra Hoy · Curva · Días sale del panel y es su propia píldora de cristal (.barra) debajo de él. .pila las apila abajo.
-   --barra-h (alto de la píldora) lo mide app.js; sirve para el tope del panel y para alinear la copia horneada del fondo (--bo). */
-.pila { --barra-h: calc(var(--tap) + 8px); --hueco: 8px; position: absolute; left: var(--margen); right: var(--margen); bottom: var(--margen); display: flex; flex-direction: column; gap: var(--hueco); max-height: calc(100cqh - var(--margen) * 2); pointer-events: none; }
+/* ---------- el cristal (ronda 10): velo del tono del cielo + backdrop-filter simple. Sin horneado, sin refracción (cristal-liquido.* ya no se carga). ----------
+   El panel de Curva y Días sigue siendo UNO por pantalla; en Hoy son tres piezas hermanas: pastilla (.cab), tarjeta (.panel) y barra, más la línea de estado que flota sobre el cielo. */
+.pila { --barra-h: calc(var(--tap) + 8px); --hueco: 8px; position: absolute; left: var(--margen); right: var(--margen); bottom: var(--margen); z-index: 2; display: flex; flex-direction: column; gap: var(--hueco); max-height: calc(100cqh - var(--margen) * 2); pointer-events: none; }
 .pila > * { pointer-events: auto; }
-.panel { --bo: calc(var(--margen) + var(--barra-h) + var(--hueco)); position: relative; flex: 0 1 auto; min-height: 0;
-  display: flex; flex-direction: column; border-radius: var(--r); }
-/* RONDA 7 (H1 del QA): siempre queda una banda de cielo libre arriba (--banda, 140 px; en 360x800 a letra 150 % es el 17 %); si el contenido no cabe, el panel se desliza por dentro (.cont) y la barra sigue a la vista. La lluvia, las estrellas y la bruma viven en esa banda. */
-.panel.hoy { max-height: min(calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)), max(calc(74cqh - var(--barra-h)), 36rem)); }
+/* Hoy: el tope de la pila deja libre la pastilla (arriba) y la banda de cielo limpia; la tarjeta se desliza por dentro si la letra es muy grande */
+.app[data-p="hoy"] .pila { max-height: calc(100cqh - var(--margen) - var(--tope)); }
+.app { --tope: calc(max(env(safe-area-inset-top, 0px), 24px) + 52px + var(--banda-libre)); }
+.panel { position: relative; flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: var(--r); }
 .panel.alta { height: calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)); }
 .panel:not(.hoy):not(.alta) { max-height: calc(100cqh - var(--banda) - var(--margen) - var(--barra-h) - var(--hueco)); }
-.vidrio { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; box-shadow: var(--sombra); z-index: 0; }
-/* la copia del fondo: mismo tamaño y misma esquina que .fondo, colocada respecto al panel (que está a --margen de los bordes) */
-.vf { left: calc(-1 * (var(--margen) + var(--sobre))); bottom: calc(-1 * (var(--bo, var(--margen)) + var(--sobre)));
-  width: calc(100cqw + var(--sobre) * 2); height: calc(100cqh + var(--sobre) * 2);
-  filter: blur(var(--blur)) saturate(1.12); }
-.tinte { position: absolute; inset: 0; background: var(--vid); border-radius: inherit; box-shadow: inset 0 0 0 1px var(--borde); }
-/* FALLBACK SÓLIDO (mismo tono, mismo borde, mismo texto; solo desaparece la foto desenfocada detrás):
-   "reducir transparencia" del sistema, navegador sin unidades de contenedor (la copia no se alinearía) y ?sinblur=1 (QA). */
-@media (prefers-reduced-transparency: reduce) { .vf { display: none; } .tinte { background: var(--vid-solido); } }
-@supports not (width: 1cqw) { .vf { display: none; } .tinte { background: var(--vid-solido); } }
-[data-sin-blur] .vf { display: none; }
-[data-sin-blur] .tinte { background: var(--vid-solido); }
-.cont { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1.5rem 1.5rem 1.75rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(#000 calc(100% - 1.75rem), transparent); mask-image: linear-gradient(#000 calc(100% - 1.75rem), transparent); }
+.vidrio { background: var(--cristal); -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat)); backdrop-filter: blur(var(--blur)) saturate(var(--sat));
+  border: var(--borde-cristal) solid var(--borde); box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .28); }
+.panel.vidrio { overflow: hidden; }
+/* el 08 avisa (data-nivel en .cf, evento cf:nivel) si el teléfono no sostiene los cuadros: 1 = el cielo baja de calidad, el cristal suelta el desenfoque; 2 = cielo quieto, cristal sin desenfoque */
+.app[data-nivel="1"], .app[data-nivel="2"] { --blur: 0px; }
+.app[data-nivel="1"] .vidrio, .app[data-nivel="2"] .vidrio { -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (prefers-reduced-transparency: reduce) { .vidrio { background: var(--vid-solido); -webkit-backdrop-filter: none; backdrop-filter: none; } .estado::before { background: var(--vid-solido) !important; } }
+.cont { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1.125rem .25rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(#000 calc(100% - 1.5rem), transparent); mask-image: linear-gradient(#000 calc(100% - 1.5rem), transparent); }
 .cont::-webkit-scrollbar { display: none; }
-.pie { position: relative; z-index: 1; padding: 0 1.5rem 1.25rem; }   /* ronda 6: el bisel inferior (18 px) no pisa la última línea */
+.pie { position: relative; z-index: 1; padding: 0 1.125rem .75rem; }
 .pie:empty { display: none; }
 .pie .fresco { margin: .5rem 0 0; }
 .cont:focus-visible { outline: 2px solid var(--tx); outline-offset: -4px; border-radius: var(--r); }
 
-/* ---------- barra de pestañas: texto sobre el mismo cristal, sin caja oscura ---------- */
-.barra { container-type: inline-size; flex: none; --cl-radio: 999px; border-radius: 999px; }
-.barra .cl__contenido { display: flex; padding: 4px 12px; }   /* 12 px a cada lado: las etiquetas quedan lejos del bisel que dobla la foto */
-.barra a { flex: 1; min-height: var(--tap); display: flex; align-items: center; justify-content: center; gap: .5rem; color: var(--tx2); text-decoration: none; font-size: 1rem; font-weight: 400; border-radius: var(--r-sm); }
+/* ---------- barra de pestañas: píldora de cristal ---------- */
+.barra { flex: none; border-radius: var(--r-pill); display: flex; padding: 4px 8px; container-type: inline-size; --velo-alfa: var(--vid-alfa-barra, var(--vid-alfa, .4)); }
+.barra a { flex: 1; min-height: var(--tap); display: flex; align-items: center; justify-content: center; gap: .5rem; color: var(--tx2); text-decoration: none; font-size: 1rem; font-weight: 400; border-radius: var(--r-pill); }
 .barra a span { text-underline-offset: .45rem; text-decoration-thickness: 2px; }
-.barra a[aria-current="page"] { color: var(--tx); font-weight: 500; }
+.barra a[aria-current="page"] { color: var(--tx); font-weight: 500; background: var(--activa); }
 .barra a[aria-current="page"] span { text-decoration-line: underline; }
 .barra a:focus-visible, .mas:focus-visible, .controles button:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; }
-
 @container (max-width: 22rem) { .barra a { flex-direction: column; gap: .1rem; padding: .35rem 0; } .barra .ic { width: 1.5rem; height: 1.5rem; } }   /* letra 130 % o más: ícono arriba, palabra abajo */
 
-/* ---------- CRISTAL LÍQUIDO (ronda 6): cristal-liquido.js dobla la foto solo en el bisel. El centro lleva el tinte de la ronda 5 (el contraste lo fija el tinte, no la foto).
-   Tinte en dos zonas: centro = --vid (igual que la ronda 5, 72 %), bisel = --vid-borde (ligero, para que la refracción se vea). Ninguna letra pisa el bisel. ---------- */
-.barra, .vidrio { --cl-tinte: var(--vid); --cl-tinte-solido: var(--vid-solido); --cl-sombra: var(--sombra); --cl-borde-luz: var(--borde); --cl-borde-sombra: var(--linea); --cl-sat: 1.1; }
-.vidrio.cl { position: absolute; inset: 0; overflow: hidden; }
-.vidrio.cl .cl__contenido { display: none; }
-.cl .cl__tinte { background: var(--vid-borde); }   /* con .cl delante gana a cristal-liquido.css, que se carga después */
-.cl .cl__tinte::before { content: ""; position: absolute; inset: var(--ti, 4px); border-radius: inherit; background: var(--vid-centro);
-  -webkit-mask: linear-gradient(90deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent), linear-gradient(0deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent);
-  -webkit-mask-composite: source-in;
-  mask: linear-gradient(90deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent), linear-gradient(0deg, transparent, #000 var(--tp, 14px), #000 calc(100% - var(--tp, 14px)), transparent);
-  mask-composite: intersect; }
-.barra { --ti: 3px; --tp: 9px; }
-.vidrio { --ti: 4px; --tp: 16px; }
-@media (prefers-reduced-transparency: reduce) { .cl .cl__tinte { background: var(--vid-solido); } .cl .cl__tinte::before { display: none; } }
-/* ronda 6 (H4): camino sólido forzado (sin backdrop-filter): la barra toma el tono compuesto del panel horneado (72 % de tinte sobre la foto), no el plano #FFFBF6 / #14303A.
-   Con "reducir transparencia" real, panel y barra son ambos --vid-solido (la regla de abajo lo restituye). */
-.barra.cl--solido { --cl-tinte-solido: rgb(212, 200, 197); }
-[data-tinta="oscuro"] .barra.cl--solido { --cl-tinte-solido: rgb(30, 34, 37); }
-@media (prefers-reduced-transparency: reduce) { .barra.cl--solido, [data-tinta="oscuro"] .barra.cl--solido { --cl-tinte-solido: var(--vid-solido); } }
-
-/* ---------- cabecera dentro del panel ---------- */
-.cab h1 { margin: 0; font-size: 1rem; font-weight: 500; color: var(--tx2); letter-spacing: .01em; }
-.cab #fecha { display: block; margin-top: .15rem; font-size: 1rem; font-weight: 400; color: var(--tx2); }
+/* ---------- pastilla del encabezado (Hoy, Curva y Días): el nombre. Es el destino del vuelo del camarón (r9). ---------- */
+.cab { position: absolute; z-index: 2; left: var(--margen); top: max(env(safe-area-inset-top, 0px), 24px); max-width: 78%; display: flex; align-items: center; gap: .625rem; padding: 4px 1rem 4px 4px; border-radius: var(--r-pill); --velo-alfa: var(--vid-alfa-cab, var(--vid-alfa, .4)); }
+.cab h1 { margin: 0; font-size: 1.125rem; font-weight: 500; line-height: 1.2; color: var(--tx); white-space: nowrap; letter-spacing: .01em; }
+.cab__marca { width: 44px; height: 44px; flex: none; border-radius: 10px; background: #0C2340; display: grid; place-items: center; }
+.cab__marca svg { width: 29.6px; aspect-ratio: 35.5 / 25.5; height: auto; display: block; }
+.fs-portada .cab__marca svg { visibility: hidden; }
 
 /* ---------- Hoy ---------- */
 .estado { display: flex; align-items: center; gap: .6rem; margin: 1.1rem 0 0; font-size: 1.25rem; font-weight: 400; line-height: 1.25; }
@@ -89,7 +63,7 @@ button { font: inherit; color: inherit; }
 .flecha[data-k="B"] { color: var(--baja); }
 .flecha .ic { width: 1.5rem; height: 1.5rem; }
 .estado .flecha .ic { width: 1.75rem; height: 1.75rem; }
-.estado .flecha .ic path { stroke-width: 1.5; }
+.estado .flecha .ic path { stroke-width: 2.1; }
 .rot { margin: 0; font-size: 1.125rem; font-weight: 500; color: var(--tx); }   /* rótulos: texto principal (meta 7:1) */
 .hero { margin-top: 1.1rem; }
 .gran, .med { margin: .1rem 0 0; font-weight: 300; letter-spacing: -.025em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -174,11 +148,6 @@ button { font: inherit; color: inherit; }
 .fila.sig .f-rot { font-weight: 500; }
 .fila.sig .f-hora { font-weight: 400; }
 
-/* ---------- apertura: la tarjeta del nombre arranca invisible; el movimiento (entrada, latido, halo) vive en mareas-cristal.css ---------- */
-.apertura { --bo: 44cqh; position: absolute; left: var(--margen); right: var(--margen); bottom: var(--bo); z-index: 3; text-align: center; padding: 1.75rem 1.5rem; border-radius: var(--r); pointer-events: none; opacity: 0; }
-.apertura > b, .apertura > span { position: relative; z-index: 1; display: block; }
-.apertura b { font-size: 2rem; font-weight: 300; letter-spacing: -.01em; line-height: 1.15; }
-.apertura span { margin-top: .5rem; font-size: 1.25rem; font-weight: 400; color: var(--tx2); }
 @media (prefers-reduced-motion: reduce) { .gira { animation: none; } }
 
 /* teléfonos cortos (360×800): menos aire arriba */
@@ -193,13 +162,63 @@ button { font: inherit; color: inherit; }
 .estado { font-size: 1.375rem; font-weight: 500; }
 .cuenta { font-size: 1.375rem; font-weight: 500; }
 .fresco, .aviso, .fuente, .vigencia, .nueva, .credito { font-size: 1.0625rem; color: var(--tx); }
-.cab h1 { font-size: 1.125rem; font-weight: 600; color: var(--tx); }
-.cab #fecha { font-size: 1.0625rem; color: var(--tx); }
-/* Ronda 9: la placa del encabezado = el ícono publicado (camarón crema sobre navy) en miniatura. Es el destino del vuelo de la portada (index.html). 2.75rem = 44 px a letra 100 %. */
-.cab { display: grid; grid-template-columns: auto 1fr; column-gap: .8rem; align-items: center; }
-.cab__marca { grid-row: 1; grid-column: 1; width: 44px; height: 44px; border-radius: 10px; background: #0C2340; display: grid; place-items: center; }
-.cab__marca svg { width: 29.6px; aspect-ratio: 35.5 / 25.5; height: auto; display: block; }
-.cab h1 { grid-row: 1; grid-column: 2; align-self: center; }
-.cab #fecha { grid-row: 2; grid-column: 1 / -1; margin-top: .35rem; }   /* la fecha conserva TODO el ancho: la placa solo comparte renglón con el nombre (letra grande) */
-.fs-portada .cab__marca svg { visibility: hidden; }
 .f-rot { font-size: 1.25rem; font-weight: 500; }
+
+/* ======================= HOY, ronda 10 (diseño del 05: diseno/pantalla.html) ======================= */
+/* Línea de estado: flota sobre el cielo, sin caja. La franja de arriba es un degradado que sube del velo del cristal para asegurar la lectura sin tinte pesado. */
+.app[data-p="hoy"] .estado { flex: none; position: relative; z-index: 2; margin: 0 calc(var(--margen) * -1) calc(var(--hueco) * -1); padding: var(--franja) calc(var(--margen) + 1rem) .625rem;
+  display: flex; align-items: center; gap: .625rem; font-size: 1.375rem; font-weight: 500; line-height: 1.2; color: var(--tx); }
+/* r10b-QA: sin caja. Un velo con las cuatro orillas difuminadas (nace en alfa 0 hacia arriba, a los lados y abajo, donde ya empieza el velo de la tarjeta): no hay borde que reconocer. */
+.app[data-p="hoy"] .estado::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: 0; right: 0; top: 0; bottom: .1rem;
+  background: rgba(var(--velo-rgb), calc(var(--loc-alfa) * .5)); display: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent), linear-gradient(180deg, transparent 0, rgba(0,0,0,.55) 45%, #000 calc(var(--franja) + .9rem), #000 calc(100% - 1rem), transparent 100%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent), linear-gradient(180deg, transparent 0, rgba(0,0,0,.55) 45%, #000 calc(var(--franja) + .9rem), #000 calc(100% - 1rem), transparent 100%); mask-composite: intersect; }
+.app:not([data-p="hoy"]) .estado, .estado[hidden] { display: none; }
+.estado .flecha .ic { width: 1.75rem; height: 1.75rem; }
+.estado .flecha .ic path { stroke-width: 2.1; }
+/* La tarjeta: solo lo vital (próxima y siguiente marea) + pie */
+.ev { padding: 0 0 .875rem; }
+.ev + .ev { border-top: .5px solid var(--linea); padding-top: .875rem; }
+.ev .fila { display: flex; justify-content: space-between; align-items: baseline; gap: .25rem .75rem; flex-wrap: wrap; }
+.ev .rot { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.ev .cuenta { margin: 0; font-size: 1.0625rem; font-weight: 500; color: var(--tx); }
+.ev .gran, .ev .med { margin: .125rem 0 0; line-height: 1.02; letter-spacing: -.01em; }
+.ev .gran { font-size: min(3.5rem, 18cqw); }
+.ev .med { font-size: min(2.5rem, 13cqw); }
+.pie-hoy { border-top: .5px solid var(--linea); padding: .75rem 0 .5rem; }
+.pie-hoy > * { margin-top: .375rem; }
+.pie-hoy > :first-child { margin-top: 0; }
+.pie-hoy .fecha { margin: 0; font-size: 1.0625rem; color: var(--tx); }
+.pie-hoy .fresco { margin-top: .375rem; }
+.pie-hoy .aviso, .pie-hoy .vigencia, .pie-hoy .nueva { margin-top: .375rem; }
+@media (max-height: 760px) { .ev .gran { font-size: min(3.25rem, 18cqw); } }
+
+/* ======================= r10b (19 oct): cristal transparente. Velo uniforme bajo (tope .28 / .38); la lectura la sostiene un refuerzo LOCAL bajo cada línea de texto vital ======================= */
+.panel.vidrio { box-shadow: inset 0 1px 0 var(--brillo-2); }
+.panel.vidrio::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(155deg, var(--brillo), var(--brillo-2) 32%, transparent 55%, var(--brillo-2) 82%, var(--brillo));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); mask-composite: exclude; }
+.app[data-p="hoy"] .ev, .app[data-p="hoy"] .pie-hoy { position: relative; isolation: isolate; text-shadow: var(--sombra-tx); }
+.app[data-p="hoy"] .estado { text-shadow: var(--sombra-tx); }
+/* Refuerzo local: banda a todo el ancho del texto con borde suave que cae FUERA del texto (el texto queda siempre en la zona llena). */
+.app[data-p="hoy"] .ev::before, .app[data-p="hoy"] .pie-hoy::before, .app[data-p="hoy"] .estado::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; left: -1.125rem; right: -1.125rem; top: -.9rem; bottom: 0;
+  background: rgba(var(--velo-rgb), var(--loc-alfa));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 .95rem, #000 calc(100% - .95rem), transparent), linear-gradient(180deg, transparent, #000 .85rem, #000 calc(100% - .7rem), transparent); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 .95rem, #000 calc(100% - .95rem), transparent), linear-gradient(180deg, transparent, #000 .85rem, #000 calc(100% - .7rem), transparent); mask-composite: intersect; }
+.app[data-p="hoy"] .estado::after { left: var(--margen); right: var(--margen); top: calc(var(--franja) - .85rem); }
+/* Curva y Días: una sola placa con mucho texto; ahí el velo va completo (total) porque no hay líneas sueltas que reforzar */
+.app:not([data-p="hoy"]) .panel.vidrio { --velo-alfa: var(--vid-total, var(--vid-alfa, .4)); }
+@media (prefers-reduced-transparency: reduce) { .app[data-p="hoy"] .ev::before, .app[data-p="hoy"] .pie-hoy::before, .app[data-p="hoy"] .estado::after { display: none; } }
+
+/* r10b-QA: con texto blanco (noche, lluvia, tormenta) la barra no baja de .5 de velo: la etiqueta "Hoy" sobre una nube clara daba 3,4 */
+:root[data-tinta="claro"] .barra { --velo-alfa: max(var(--vid-alfa-barra, .14), .5); }
+
+/* r10b-QA: la banda local de la línea de estado se difumina en las 4 orillas con un tramo largo (sin borde reconocible); el halo de texto hace el resto */
+.app[data-p="hoy"] .estado::after { left: calc(var(--margen) - .6rem); right: calc(var(--margen) - .6rem); top: calc(var(--franja) - 1.4rem); bottom: -.5rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 2.4rem, #000 calc(100% - 2.4rem), transparent), linear-gradient(180deg, transparent, #000 1.5rem, #000 calc(100% - 1.2rem), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 2.4rem, #000 calc(100% - 2.4rem), transparent), linear-gradient(180deg, transparent, #000 1.5rem, #000 calc(100% - 1.2rem), transparent); }
+.app[data-p="hoy"] .estado { text-shadow: var(--sombra-tx), var(--sombra-tx); }
+
+/* r10b-QA: con texto blanco el refuerzo local nunca baja de .28 (noche-lluvia tenía 0 y el pie daba 4,2) */
+:root[data-tinta="claro"] { --loc-alfa: max(var(--vid-loc, 0), .28); }

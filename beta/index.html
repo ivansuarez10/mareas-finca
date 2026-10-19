@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es-HN" data-tinta="claro">
+<html lang="es-HN" data-tinta="oscuro">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,7 +10,7 @@
 /* PORTADA, paso 1 (en línea, antes de cualquier hoja): decide completa | corta | ninguna con el sello local (14, retencion.md §1).
    Sello: localStorage 'fs-entrada' = {d: último día local en que se vio la completa, t: última apertura}. Síncrono, con try/catch; si falla, corta.
    ?portada=1 fuerza la completa y NO escribe el sello. Nada sale del teléfono. */
-(function(){var H=document.documentElement,FS=window.FS={modo:'corta',rm:false,total:6,n:0,hojas:false,app:false,listo:false,cb:[],
+(function(){var H=document.documentElement,FS=window.FS={modo:'corta',rm:false,total:5,n:0,hojas:false,app:false,listo:false,cb:[],
 chequea:function(){if(FS.listo)return;if(!FS.hojas&&FS.n>=FS.total){FS.hojas=true;if(FS.alHojas)FS.alHojas()}if(FS.hojas&&FS.app){FS.listo=true;FS.tListo=Math.round(performance.now());FS.cb.splice(0).forEach(function(f){f()})}},
 cuando:function(f){if(FS.listo)f();else FS.cb.push(f)}};
 try{localStorage.removeItem('mareas.entrada');localStorage.removeItem('mareas.splash')}catch(e){}   /* un solo sello: fs-entrada reemplaza a los dos viejos (20 min) */
@@ -58,11 +58,10 @@ html[data-rm] .fs-ola-a,html[data-rm] .fs-ola-b{animation:none}
 <link rel="stylesheet" href="tokens.css" media="print" onload="FSh(this)" onerror="FSh(this)">
 <link rel="stylesheet" href="app.css" media="print" onload="FSh(this)" onerror="FSh(this)">
 <link rel="stylesheet" href="mareas-cristal.css" media="print" onload="FSh(this)" onerror="FSh(this)">
-<link rel="stylesheet" href="cristal-liquido.css" media="print" onload="FSh(this)" onerror="FSh(this)">
 <link rel="stylesheet" href="clima-fondo.css" media="print" onload="FSh(this)" onerror="FSh(this)">
-<link rel="stylesheet" href="clima-tinte.css" media="print" onload="FSh(this)" onerror="FSh(this)">
-<link rel="preload" href="data.js" as="script"><link rel="preload" href="datos-vivos.js" as="script"><link rel="preload" href="mareas-cristal.js" as="script"><link rel="preload" href="cristal-liquido.js" as="script"><link rel="preload" href="clima-paletas.js" as="script"><link rel="preload" href="clima-fondo.js" as="script"><link rel="preload" href="clima-vivo.js" as="script"><link rel="preload" href="app.js" as="script">
-<!-- PRUEBA (retirar al integrar, ver INTEGRACION.md): ?tinta=claro|oscuro  ?letra=100|130|150  ?sinblur=1 (fuerza el fallback sólido). Va en el head para aplicarse antes del primer pintado. -->
+<link rel="stylesheet" href="tinte-estados.css" media="print" onload="FSh(this)" onerror="FSh(this)">
+<link rel="preload" href="data.js" as="script"><link rel="preload" href="datos-vivos.js" as="script"><link rel="preload" href="mareas-cristal.js" as="script"><link rel="preload" href="clima-paletas.js" as="script"><link rel="preload" href="tinte-motor.js" as="script"><link rel="preload" href="clima-nubes.js" as="script"><link rel="preload" href="clima-fondo.js" as="script"><link rel="preload" href="clima-vivo.js" as="script"><link rel="preload" href="app.js" as="script">
+<!-- PRUEBA (retirar al integrar, ver INTEGRACION.md): ?tinta=claro|oscuro (OJO r10: oscuro = texto oscuro)  ?letra=100|130|150  ?sinblur=1  ?x=4 (reloj del cielo x4, SOLO demostración en video)  ?vel=1.5 (velocidad de nubes). Va en el head para aplicarse antes del primer pintado. -->
 <script>try{var q=new URLSearchParams(location.search),r=document.documentElement,t=q.get('tinta'),l=+q.get('letra');
 if(t==='claro'||t==='oscuro')r.dataset.tinta=t;if(l>=100&&l<=160)r.style.fontSize=l+'%';if(q.get('sinblur')==='1')r.dataset.sinBlur=''}catch(e){}</script>
 <!-- FIN PRUEBA -->
@@ -180,7 +179,7 @@ raf=requestAnimationFrame(tick);
 <div id="app" class="app"><noscript><p style="padding:1.5rem;font:400 1.25rem sans-serif">Esta app necesita JavaScript para mostrar las mareas.</p></noscript></div>
 <script>
 /* PORTADA, paso 4: las hojas ya cargan solas (media=print); los scripts de la app entran DESPUÉS del primer pintado y de las hojas, en orden, sin bloquear. Los datos cargan detrás: nada espera a la portada. */
-(function(){var FS=window.FS,S=['data.js','datos-vivos.js','mareas-cristal.js','cristal-liquido.js','clima-paletas.js','clima-fondo.js','clima-vivo.js','app.js'],pintado=false,lanzado=false;
+(function(){var FS=window.FS,S=['data.js','datos-vivos.js','mareas-cristal.js','clima-paletas.js','tinte-motor.js','clima-nubes.js','clima-fondo.js','clima-vivo.js','app.js','clima-prueba.js'],pintado=false,lanzado=false;
 function lanza(){if(lanzado||!pintado||!FS.hojas)return;lanzado=true;var n=S.length;
 S.forEach(function(u){var s=document.createElement('script');s.src=u;s.async=false;s.onload=s.onerror=function(){if(--n===0){FS.app=true;FS.chequea()}};document.body.appendChild(s)})}
 var ap=document.getElementById('app');if(ap&&!FS.tFin)ap.inert=true;   /* mientras haya telón, el teclado no llega a la app de abajo */

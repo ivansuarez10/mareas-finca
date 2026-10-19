@@ -19,7 +19,15 @@
    2. rayos: solo con condicion 'tormenta' (weather_code 95/96/99), nunca con clima caducado ni en modo quieto. Arco que cae y se bifurca al azar + destello de todo el cielo.
       Seguridad (WCAG 2.3.1): maximo 3 destellos por segundo (lo hace cumplir el codigo, ver puedeDestellar) y amplitud baja (opciones.rayoAmp, 0,20 por defecto).
    3. sol intenso: condicion 'despejado' de dia con el sol alto (25 a 45 grados de elevación, 0 con más de 15 % de nube) o condicion 'soleado' forzada. Nucleo cortado por el borde, bloom, velo blanco-calido y halo.
-      El motor sigue diciendo condicion 'despejado' en cf:estado y agrega solIntenso / sol (0-1) para que el panel de cristal ajuste su tinte. */
+      El motor sigue diciendo condicion 'despejado' en cf:estado y agrega solIntenso / sol (0-1) para que el panel de cristal ajuste su tinte.
+
+   RONDA 10 (08 Motion, 17 oct 2026): el cielo SE MUEVE. Ver notas-motion.md (mediciones y decisiones).
+   1. nubes vivas: clima-nubes.js (ClimaNubes) sustituye a las 3 texturas con WAAPI: ruido fractal (fBm 3D) en WebGL con respaldo canvas 2D, tres capas que derivan con el
+      viento REAL (tope de 90 s por ancho) y cambian de forma sin bucle; zona calma bajo el dato de marea (sin octavas finas, menos opacidad). Se apaga con opciones.nubesVivas=false.
+   2. sol por elevación y hora (posición x/y), núcleo suave visible con aro, y destellos que respiran (opacidad, solo en la banda de cielo, nunca bajo el panel).
+   3. lluvia: más inclinada con el viento, parte cae detrás del panel con menos opacidad y nada en la zona del dato vital.
+   4. cf:estado agrega tinte (rgb del cielo detrás del panel), luzMaxPanel/luzMinPanel y nubes; también queda en las variables CSS --cf-tinte-rgb, --cf-lum-max, --cf-lum-min.
+   5. cascada: webgl -> webgl ligero -> canvas 2D -> quieto; data-nivel y el evento cf:nivel avisan para que el panel suelte el desenfoque. */
 (function (g) {
   'use strict';
 
@@ -41,7 +49,7 @@
     estatico: false,      // forzar la versión sin animación
     agua: false,          // 09 r7: propuesta B, sin agua (ahorra un canvas de rayas y no puede leerse como corriente)
     libre: 0.3,           // 09 r7: fracción de la altura que queda libre sobre el panel (la cambia setLibre con el valor real en px)
-    inclinMax: 0.1,       // 09 r7: inclinación máxima de la lluvia (vx/vy; 0,1 = ~6 grados)
+    inclinMax: 0.22,      // r10: inclinación máxima de la lluvia (vx/vy; 0,22 = ~12 grados, como la tormenta de Apple)
     rayos: true,          // r8: false = nunca rayos
     rayoAmp: 0.2,         // r8: opacidad máxima del destello del cielo (tope duro 0,22). Con 0,20 el salto de luminancia relativa del peor punto queda en 0,056 (noche) a 0,078 (día) en las paletas de tormenta: < 0,10 del umbral de destello general de WCAG 2.3.1
     rayoPrimero: [1800, 3800],   // r8: ms hasta el primer rayo
@@ -56,8 +64,22 @@
     solX: 74,             // r8: posición horizontal del sol, % del ancho (Apple lo deja cerca del 77 %)
     solY: -3,             // r8: posición vertical, % del alto (negativo = fuera del cuadro por arriba, el núcleo queda cortado por el borde)
     nubesCapas: 3,
+    nubesVivas: true,     // r10: nubes con ruido fractal (ClimaNubes). false = las texturas con WAAPI de la r8
+    motorNubes: 'auto',   // 'auto' (webgl, y canvas si no hay) | 'webgl' | 'canvas'
+    nubesRetardo: 0,      // r10: ms antes de que el cielo arranque a moverse (la entrada del camarón de la r9 termina primero; el cuadro fijo se ve desde el inicio)
+    velocidadNubes: 1.5,  // r10: multiplicador de velocidad (1 = cruzar el ancho en >= 90 s; 1.5 = ~60 s). Ivan (19 oct): el movimiento se sentia quieto, se sube a 1.5
+    escalaTiempo: 1,      // r10: reloj acelerado SOLO para video de demostración (nunca en producción)
+    tinteVivo: true,      // r10: mide el píxel más claro/oscuro y calcula el tinte del cristal con ClimaTinte (si está cargado)
+    nubesSol: 0.75,        // r10: opacidad de las nubes finas con sol intenso (la r8 las dejaba en 0,15: no se veían)
+    panelK: 0.8,          // r10b: cuánto de nube queda bajo el panel (0-1); r10 era 0,55 y a través del cristal se veía un degradado liso
+    calmaK: 0.78,         // r10b (0,3 en r10; x panelK = 0,58 absoluto): cuánto queda en la zona del dato vital (0-1)
+    calmaPx: 210,         // r10: alto (px) de la zona del dato vital bajo el borde del panel, si la app no avisa con setCalma()
+    lluviaFr: 0.55,       // r10: fracción de gotas que caen solo en la banda de cielo (el resto sigue detrás del panel, con menos opacidad)
+    lluviaPanelK: 0.4,    // r10: opacidad de la lluvia detrás del panel
+    solGlints: true,      // r10: destellos suaves que respiran junto al sol
     nubesAlfa: 1          // r8: multiplicador de la opacidad de las nubes (la paleta del 05 fija la base)
   };
+
 
   /* Paletas de fábrica (provisionales: el 05 puede sustituirlas con opciones.paletas). Sin verde ni morado; el cálido del
      amanecer y el atardecer es arena/durazno apagado, no el naranja de la marea. */
@@ -199,6 +221,12 @@
     estrellas[0].style.setProperty('--est', estrellasSVG(11, 34, H));
     estrellas[1].style.setProperty('--est', estrellasSVG(29, 26, H));
     cont.appendChild(raiz);
+    var glints = el('div', 'cf-glints'), glintEls = [];   // r10: destellos del sol, confinados a la banda de cielo (no se superponen al cristal: el desenfoque no se repinta por ellos)
+    raiz.insertBefore(glints, bruma);
+    var NB = null;
+    if (o.nubesVivas && g.ClimaNubes) {
+      try { NB = g.ClimaNubes.crear(nubesCont, { modo: o.motorNubes, velocidad: o.velocidadNubes, escalaTiempo: o.escalaTiempo, retardo: o.nubesRetardo, permitirSoftware: !!o.permitirSoftware, onNivel: function (n, modo) { raiz.dataset.nivel = n; raiz.dataset.nubes = modo; try { cont.dispatchEvent(new CustomEvent('cf:nivel', { detail: { nivel: n, modo: modo } })); } catch (e) { /* sin eventos */ } } }); if (NB.sinMotor) NB = null; } catch (e) { NB = null; }
+    }
 
     // rayas del agua: respiran en el sitio (opacidad y ancho), sin desplazarse hacia ningún lado
     var rayas = [], NR = 18, rr = prng(77);
@@ -319,8 +347,17 @@
     }
 
     /* ---------- lluvia ---------- */
+    function zonas() { // r10: banda de cielo y zona calma del dato vital, en px desde arriba
+      if (!NB || !S.h) return;
+      var b = banda() - 24, a0 = S.calma0 != null ? S.calma0 : b, a1 = S.calma1 != null ? S.calma1 : b + o.calmaPx;
+      NB.setZonas({ banda: b, calma0: a0, calma1: a1, panelK: o.panelK, calmaK: o.calmaK });
+      glints.style.height = Math.max(60, b) + 'px';
+      destello.style.height = (b + 30) + 'px'; destello.style.webkitMaskImage = destello.style.maskImage = 'linear-gradient(180deg,#000 0,#000 ' + Math.max(10, b - 20) + 'px,transparent ' + (b + 30) + 'px)';   // 05/director: nada de destello en la zona calma
+      S.pideVivo = true;
+    }
     function dimensionar() {
       var W = cont.clientWidth, Hh = cont.clientHeight; if (!W || !Hh) return;
+      if (NB) zonas();
       S.w = W; S.h = Hh; S.dpr = Math.min(g.devicePixelRatio || 1, 1.5);
       canvas.width = Math.round(W * S.dpr); canvas.height = Math.round(Hh * S.dpr);
       S.ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
@@ -329,12 +366,13 @@
       if (sinMov() && S.I > 0.01) pintarEstatica();
     }
     function maxGotas() { return Math.round(Math.min(o.maxParticulas, 30 + 300 * S.I * S.factor) * clamp((S.w * S.h) / (390 * 844), 0.6, 1.4)); }
-    function inclin() { return clamp(-Math.sin(S.dir * Math.PI / 180) * S.viento * 0.12, -o.inclinMax, o.inclinMax); }
+    function inclin() { return clamp(-Math.sin(S.dir * Math.PI / 180) * S.viento * 0.3, -o.inclinMax, o.inclinMax); }
+    function zonaA() { var b = banda() - 24; return [S.calma0 != null ? S.calma0 : b, S.calma1 != null ? S.calma1 : b + o.calmaPx]; }
     function yLibre() { return S.libre > 0 ? S.libre : o.libre * S.h; }
     function kLluvia() { return (S.momento === 'noche' ? 1.15 : 1) * (0.75 + 0.5 * Math.min(1, S.I)); }
     /* 09 r7: 72 % de las gotas viven solo en la franja libre sobre el panel (ahí es donde se ven); el resto cae a toda la altura y se ve en la rendija panel-barra y en los márgenes */
     function nuevaGota(inicio) {
-      var l = S.n * 7, far = Math.random() < 0.5, fr = Math.random() < 0.72 ? 1 : 0, tope = fr ? yLibre() + 24 : S.h + 10, k = 0.75 + S.I * 0.45;
+      var l = S.n * 7, far = Math.random() < 0.5, fr = Math.random() < o.lluviaFr ? 1 : 0, tope = fr ? yLibre() + 24 : S.h + 10, k = 0.75 + S.I * 0.45;
       S.gotas[l] = Math.random() * (S.w + 60) - 30;                                // x
       S.gotas[l + 1] = inicio ? Math.random() * tope : -20 - Math.random() * 60;  // y
       S.gotas[l + 2] = far ? 560 + Math.random() * 140 : 820 + Math.random() * 260;  // vy px/s
@@ -357,20 +395,23 @@
       var seg = t / 1000, amp = clamp(0.5 - 0.45 * S.Iobj, 0.1, 0.5), mod = 1 - amp * (0.5 + 0.5 * Math.sin(seg / 21) * Math.sin(seg / 8.3 + 1.2));   // 09 r7: más constante cuanto más fuerte (llovizna 0,6 a 1; tormenta 0,9 a 1)
       var objetivo = maxGotas() * (S.Iobj > 0 ? mod : 0) * Math.min(1, S.I / Math.max(S.Iobj, 0.01));
       var ctx = S.ctx; ctx.clearRect(0, 0, S.w, S.h);
-      var yAgua = S.h * H, cercas = new Path2D(), lejos = new Path2D(), g7 = S.gotas, i, libre = yLibre() + 24, kk = kLluvia();
+      var yAgua = S.h * H, cercas = new Path2D(), lejos = new Path2D(), cercasP = new Path2D(), lejosP = new Path2D(), g7 = S.gotas, i, libre = yLibre() + 24, kk = kLluvia(), za = zonaA();
       for (i = 0; i < S.n; i++) {
         var l = i * 7; g7[l + 1] += g7[l + 2] * dt; g7[l] += g7[l + 5] * g7[l + 2] * dt;
         if (g7[l + 1] > (g7[l + 6] ? libre : S.h + 10)) {                    // sale: se recicla solo si falta lluvia
           if (S.n <= objetivo) { g7[l] = Math.random() * (S.w + 60) - 30; g7[l + 1] = -20 - Math.random() * 50; g7[l + 5] = inclin(); }
           else { S.n--; g7.copyWithin(l, S.n * 7, S.n * 7 + 7); i--; continue; }
         }
-        var P = g7[l + 4] ? cercas : lejos;
-        P.moveTo(g7[l], g7[l + 1]); P.lineTo(g7[l] + g7[l + 5] * g7[l + 3], g7[l + 1] - g7[l + 3]);
+        var gy = g7[l + 1]; if (gy > za[0] && gy < za[1]) continue;   // r10: ni una gota sobre el dato vital (14, zona A)
+        var P = g7[l + 4] ? (gy > libre ? cercasP : cercas) : (gy > libre ? lejosP : lejos);   // bajo la banda (detrás del panel) la lluvia va con menos opacidad
+        P.moveTo(g7[l], gy); P.lineTo(g7[l] + g7[l + 5] * g7[l + 3], gy - g7[l + 3]);
       }
       while (S.n < objetivo && S.n < o.maxParticulas) nuevaGota(false);
       ctx.lineCap = 'round';
       ctx.strokeStyle = 'rgba(' + S.lluviaCol + ',' + Math.min(0.5, 0.26 * kk).toFixed(3) + ')'; ctx.lineWidth = 1; ctx.stroke(lejos);
       ctx.strokeStyle = 'rgba(' + S.lluviaCol + ',' + Math.min(0.8, 0.5 * kk).toFixed(3) + ')'; ctx.lineWidth = 1.4; ctx.stroke(cercas);
+      ctx.strokeStyle = 'rgba(' + S.lluviaCol + ',' + (Math.min(0.5, 0.26 * kk) * o.lluviaPanelK).toFixed(3) + ')'; ctx.lineWidth = 1; ctx.stroke(lejosP);
+      ctx.strokeStyle = 'rgba(' + S.lluviaCol + ',' + (Math.min(0.8, 0.5 * kk) * o.lluviaPanelK).toFixed(3) + ')'; ctx.lineWidth = 1.4; ctx.stroke(cercasP);
       if (o.agua) { // anillos en el agua (solo con agua)
         if (S.ondas.length < o.maxOndas && Math.random() < dt * S.I * 9 * S.factor) S.ondas.push({ x: Math.random() * S.w, y: yAgua + 6 + Math.random() * (S.h - yAgua - 20), t: 0 });
         ctx.lineWidth = 0.8;
@@ -397,14 +438,15 @@
 
     function pintarEstatica() { // lluvia "congelada": se reconoce sin moverse (misma distribución que la viva: franja libre + resto)
       var ctx = S.ctx; ctx.clearRect(0, 0, S.w, S.h);
-      var n = Math.round(maxGotas() * 0.9), r = prng(5), ln = inclin(), kk = kLluvia(), libre = yLibre() + 24, k = 0.75 + S.I * 0.45;
+      var n = Math.round(maxGotas() * 0.9), r = prng(5), ln = inclin(), kk = kLluvia(), libre = yLibre() + 24, k = 0.75 + S.I * 0.45, za = zonaA();
       ctx.lineCap = 'round';
-      [0, 1].forEach(function (cerca) {
-        ctx.beginPath(); ctx.lineWidth = cerca ? 1.4 : 1;
-        ctx.strokeStyle = 'rgba(' + S.lluviaCol + ',' + (cerca ? Math.min(0.8, 0.5 * kk) : Math.min(0.5, 0.26 * kk)).toFixed(3) + ')';
+      [[0, 1], [0, 0.4], [1, 1], [1, 0.4]].forEach(function (cp) {   // [cerca, factor de opacidad]: 1 = banda de cielo, 0,4 = detrás del panel
+        var cerca = cp[0], pan = cp[1] < 1; ctx.beginPath(); ctx.lineWidth = cerca ? 1.4 : 1;
+        ctx.strokeStyle = 'rgba(' + S.lluviaCol + ',' + ((cerca ? Math.min(0.8, 0.5 * kk) : Math.min(0.5, 0.26 * kk)) * (pan ? o.lluviaPanelK : 1)).toFixed(3) + ')';
+        r = prng(5);
         for (var i = 0; i < n; i++) {
-          var esCerca = r() >= 0.5, fr = r() < 0.72, x = r() * S.w, y = r() * (fr ? libre : S.h), l = (esCerca ? 18 + r() * 10 : 11 + r() * 6) * k;
-          if (esCerca !== !!cerca) continue;
+          var esCerca = r() >= 0.5, fr = r() < o.lluviaFr, x = r() * S.w, y = r() * (fr ? libre : S.h), l = (esCerca ? 18 + r() * 10 : 11 + r() * 6) * k;
+          if (esCerca !== !!cerca || (y > libre) !== pan || (y > za[0] && y < za[1])) continue;
           ctx.moveTo(x, y); ctx.lineTo(x + ln * l, y - l);
         }
         ctx.stroke();
@@ -423,6 +465,8 @@
 
     function aplicarMovimiento() { // pausa / reanuda todo lo que se mueve
       S.nubes.forEach(function (n) { if (n.anim) { if (quieto()) n.anim.pause(); else n.anim.play(); } });
+      if (NB) { if (sinMov()) NB.quieto(true); else { NB.quieto(false); if (quieto()) NB.pausar(); else NB.reanudar(); } }
+      glintEls.forEach(function (x) { if (x.anim) { if (quieto()) x.anim.pause(); else x.anim.play(); } });
       if (S.respiro) { if (quieto()) S.respiro.pause(); else S.respiro.play(); }
       modoClases();
       if (quieto()) { detenerRayos(); if (sinMov() && S.tormenta) pintarRayoQuieto(); }
@@ -436,17 +480,47 @@
     /* ---------- sol intenso (r8) ----------
        Lo visto en el Clima de macOS (16 oct, Madrid, "Sunny"): el sol queda FUERA del cuadro por arriba, el núcleo blanco lo corta el borde, el bloom lava el cielo
        a blanco-cálido y cae suave en ~25-30 % del alto, y hay un halo en anillo tenue. No hay disco dibujado. Aquí: mismas piezas, medidas y colores propios. */
-    function pintarSol() {
-      var X = o.solX + '% ' + o.solY + '%';
-      solCapas.velo.style.background = 'radial-gradient(ellipse 140% 46% at ' + X + ',rgba(255,243,230,.66) 0%,rgba(255,241,226,.33) 42%,rgba(255,241,226,0) 100%)';
-      solCapas.halo.style.background = 'radial-gradient(ellipse 80% 24% at ' + X + ',rgba(255,255,255,0) 56%,rgba(255,232,206,.11) 67%,rgba(206,232,255,.09) 78%,rgba(255,255,255,0) 90%)';
-      solCapas.bloom.style.background = 'radial-gradient(ellipse 68% 24% at ' + X + ',rgba(255,251,244,.98) 0%,rgba(255,244,230,.70) 30%,rgba(255,238,214,.26) 64%,rgba(255,238,214,0) 100%)';
-      solCapas.nucleo.style.background = 'radial-gradient(ellipse 15% 7% at ' + X + ',#fff 0%,#fff 46%,rgba(255,255,255,0) 100%)';
-      raiz.style.setProperty('--cf-sol-x', o.solX + '%');
-      if (o.solRespira && solCapas.bloom.animate && !S.respiro) {   // el bloom respira: solo opacidad, 11 s, ±5 %. 09 r8: APAGADO por defecto: bajo el cristal (backdrop-filter) repinta el desenfoque en cada cuadro y con CPU x4 perdía 56 de 664 cuadros (8 %); sin respirar, 10 (1,4 %)
+    function pintarSol(gs) {
+      gs = gs || solGeom({}, 'dia');
+      var P = gs.px, k = P.vw / 390, X = P.x.toFixed(0) + 'px ' + P.y.toFixed(0) + 'px', r = function (n) { return (n * k).toFixed(0) + 'px'; };
+      /* 10b: todo en px y en círculos (antes en % de un cuadro no cuadrado: el núcleo salía ovalado y el borde de arriba lo cortaba). El sol entero (disco, aro, bloom) cae dentro de la banda visible. */
+      solCapas.velo.style.background = 'radial-gradient(ellipse ' + r(380) + ' ' + r(250) + ' at ' + X + ',rgba(255,243,230,.50) 0%,rgba(255,241,226,.24) 45%,rgba(255,241,226,0) 100%)';
+      // aro doble, fino y suave: el del video de Ivan apenas se nota; el halo se ve más como un velo que como un anillo duro
+      solCapas.halo.style.background = 'radial-gradient(circle ' + r(112) + ' at ' + X + ',rgba(255,255,255,0) 58%,rgba(255,240,218,.20) 74%,rgba(255,255,255,0) 100%),radial-gradient(circle ' + r(176) + ' at ' + X + ',rgba(255,255,255,0) 60%,rgba(206,232,255,.13) 76%,rgba(255,255,255,0) 100%)';
+      solCapas.bloom.style.background = 'radial-gradient(circle ' + r(210) + ' at ' + X + ',rgba(255,251,244,.78) 0%,rgba(255,244,230,.50) 24%,rgba(255,238,214,.20) 56%,rgba(255,238,214,0) 100%)';
+      // núcleo: disco blando completo (no un símbolo): centro casi blanco, borde difuminado
+      solCapas.nucleo.style.background = 'radial-gradient(circle ' + r(54) + ' at ' + X + ',rgba(255,255,252,1) 0%,rgba(255,252,242,.97) 42%,rgba(255,246,226,.62) 70%,rgba(255,240,214,0) 100%)';
+      raiz.style.setProperty('--cf-sol-x', gs.x.toFixed(1) + '%'); raiz.style.setProperty('--cf-sol-y', gs.y.toFixed(1) + '%');
+      if (o.solRespira && solCapas.bloom.animate && !S.respiro) {
         S.respiro = solCapas.bloom.animate([{ opacity: 0.93 }, { opacity: 1 }], { duration: 11000, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
         if (quieto()) S.respiro.pause();
       }
+    }
+    /* r10: destellos del sol. Parches de luz blanda alrededor del sol, SOLO dentro de la banda de cielo (el contenedor mide la banda), que respiran en opacidad (7 a 13 s, amplitud baja,
+       desfasados: nunca se encienden todos a la vez). Nada se desplaza ni escala (14: sin pulso, sin zoom). Se crean una vez; la posición sigue al sol. */
+    function pintarGlints(gs, solK) {
+      if (!o.solGlints) return;
+      if (!glintEls.length) {
+        var rg = prng(909);
+        for (var i = 0; i < 6; i++) {   // 10b: 6 destellos (5 a 7), 7 a 13 s, repartidos en el aro y el resto del halo
+          var e = el('i'), ang = (i + rg() * 0.7) / 6 * 6.283 + 0.4, rad = 0.12 + rg() * 0.30, tam = 28 + rg() * 52, d = 7000 + rg() * 6000, amp = 0.26 + rg() * 0.2;
+          e.style.cssText = 'position:absolute;display:block;border-radius:50%;opacity:0;width:' + tam.toFixed(0) + 'px;height:' + tam.toFixed(0) + 'px;margin:' + (-tam / 2).toFixed(0) + 'px 0 0 ' + (-tam / 2).toFixed(0) + 'px;background:radial-gradient(closest-side,rgba(255,252,238,1),rgba(255,248,226,.5) 45%,rgba(255,244,214,0) 100%)';
+          glints.appendChild(e);
+          var x = { el: e, ang: ang, rad: rad, d: d, amp: amp, anim: null }; glintEls.push(x);
+        }
+      }
+      var P = gs.px, W = S.w || cont.clientWidth || 390, Hb = Math.max(60, banda() - 24);
+      glintEls.forEach(function (x, i) {
+        var px = P.x + Math.cos(x.ang) * x.rad * P.vw, py = P.y + Math.sin(x.ang) * x.rad * P.vw * 0.5;
+        px = clamp(px, P.ox + 20, P.ox + P.vw - 20); py = clamp(py, P.oy + 16, Hb - 26);   // nunca bajo la banda de cielo
+        x.el.style.left = px.toFixed(0) + 'px'; x.el.style.top = py.toFixed(0) + 'px';
+        var pico = (x.amp * solK).toFixed(3);
+        if (x.anim) { x.anim.cancel(); x.anim = null; }
+        if (solK <= 0.01) { x.el.style.opacity = 0; return; }
+        if (sinMov() || !x.el.animate) { x.el.style.opacity = (x.amp * solK * 0.5).toFixed(3); return; }   // Reducir movimiento: cuadro fijo, tenue
+        x.anim = x.el.animate([{ opacity: 0 }, { opacity: +pico }, { opacity: 0 }], { duration: x.d, iterations: Infinity, easing: 'ease-in-out', delay: -x.d * ((i * 0.37) % 1) });
+        if (quieto()) x.anim.pause();
+      });
     }
     /* elevación del sol en grados, por la fórmula astronómica con la latitud del pueblo (opciones.lat), el día del año y la hora solar (mediodía = punto medio entre salida y puesta).
        Momento fijado a mano o sin hora de sol: 0, salvo que se pase est.elevacion (pruebas). */
@@ -458,6 +532,25 @@
       var dec = -23.44 * Math.cos(2 * Math.PI * (N + 10) / 365) * Math.PI / 180, lat = o.lat * Math.PI / 180;
       return Math.asin(clamp(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(H), -1, 1)) * 180 / Math.PI;
     }
+    /* r10: posición del sol en pantalla (% del ancho y del alto) por la hora solar y la elevación reales. x: ángulo horario -75..75 grados -> 12..88 %; y: elevación 90..25 grados -> 5..15 %
+       (sol visible, justo bajo el borde, con el aro alrededor). Sin hora de sol: la posición fija de la r8. Amanecer y atardecer no pintan sol intenso: el cielo ya trae su resplandor. */
+    function vis() { // parte visible del fondo (el fondo sobrepasa la pantalla por --sobre): el sol se coloca aquí, nunca en el sobreescaneo
+      var r = cont.getBoundingClientRect ? cont.getBoundingClientRect() : { left: 0, top: 0 }, W = S.w || cont.clientWidth || 390, Hh = S.h || cont.clientHeight || 844;
+      var ox = clamp(-r.left, 0, Math.max(0, W / 2 - 100)), oy = clamp(-r.top, 0, Math.max(0, Hh / 2 - 100));
+      return { ox: ox, oy: oy, vw: W - 2 * ox, vh: Hh - 2 * oy, W: W, H: Hh };
+    }
+    function solGeom(est, m) {
+      var V = vis(), fx = o.solX, el = 0, t;
+      var ee = isFinite(est.elevacion) && est.elevacion !== null ? +est.elevacion : null;
+      if (m === 'dia' && !est.momentoFijo && S.sol) { var a = ahoraEnZona(o.zona), Hh = (a - (S.sol[0] + S.sol[1]) / 2) / 4; fx = 50 + clamp(Hh / 75, -1, 1) * 38; el = elevacionSol(est, m); }
+      else if (ee != null) el = ee;
+      fx = clamp(fx, 28, 72);   // 10b: el disco entero queda dentro de la pantalla (antes 12-88 %)
+      t = clamp((90 - el) / 65, 0, 1);
+      var bandaVis = Math.max(120, banda() - 24 - V.oy), yv = clamp(bandaVis * mixn(0.2, 0.32, t), 70 * V.vw / 390, Math.max(70, bandaVis - 70));
+      var px = V.ox + fx / 100 * V.vw, py = V.oy + yv;
+      return { x: px / V.W * 100, y: py / V.H * 100, el: el, px: { x: px, y: py, vw: V.vw, vh: V.vh, ox: V.ox, oy: V.oy } };
+    }
+    function mixn(a, b, t) { return a + (b - a) * t; }
     function suave(a, b, x) { x = clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); }
     /* intensidad 0-1 del sol (criterio del 05): 'soleado' fuerza 1; si no, solo de día con condición 'despejado', 0 con más de 15 % de nube y suavizada de 25 a 45 grados de elevación */
     function intensidadSol(est, m, condPedida, cond) {
@@ -576,6 +669,39 @@
     }
 
     /* ---------- aplicar un estado ---------- */
+    /* r10: tinte y luminancia que el motor expone por estado, para el cristal del 05 (tono del cielo) y para el contraste del 10.
+       rgb = color medio del cielo (con la nube que queda) en la zona del panel (24 a 92 % del alto). luzMaxPanel/luzMinPanel = luminancia relativa más alta y más baja ESPERADAS ahí
+       (cielo mezclado con luz o sombra de nube al opacidad que le deja el panel). Es una estimación analítica con tope: el contraste real lo mide el 10 sobre la pantalla en un ciclo de nubes. */
+    function tinteDe(cz, nb, cond, solK, luzMax) {
+      var st = cz.stops, f = function (y) { var t = y < 0.46 ? y / 0.46 : (y - 0.46) / 0.54, a = y < 0.46 ? st[0] : st[1], b = y < 0.46 ? st[1] : st[2]; return mix(a, b, clamp(t, 0, 1)); };
+      var acc = [0, 0, 0], N = 12, i, mn = 9, mx = 0, ap = nb ? nb.alfaMax * o.panelK : 0;
+      for (i = 0; i < N; i++) { var c = f(0.24 + 0.68 * i / (N - 1)); acc = [acc[0] + c[0], acc[1] + c[1], acc[2] + c[2]]; var l = lum(c); if (l < mn) mn = l; if (l > mx) mx = l; }
+      var med = [acc[0] / N, acc[1] / N, acc[2] / N], nbMed = nb ? mix(nb.sombra, nb.luz, 0.55) : med;
+      var rgbT = mix(med, nbMed, clamp(ap * (S.nbCob != null ? 0.4 + 0.6 * S.nbCob : 0.5), 0, 0.7));
+      var lmx = nb ? mx * (1 - ap) + Math.max(nb.luzLum, mx) * ap : mx, lmn = nb ? mn * (1 - ap) + Math.min(nb.somLum, mn) * ap : mn;
+      return { rgb: rgbT, lumMedia: lum(rgbT), luzMaxPanel: lmx, luzMinPanel: lmn, nb: nb || { luzLum: 0, somLum: 0, alfaMax: 0 } };
+    }
+    /* director/05 (r10): el motor MIDE el píxel más claro y más oscuro detrás del cuerpo del panel (desde la línea de estado hasta abajo) en un ciclo de nubes y se lo pasa
+       al parámetro `vivo` de tinte-motor.js (ClimaTinte.zonas). El resultado se escribe en el <html> (--vid-rgb, --vid-alfa, --vid-alfa-n, --vid-alfa-cab, --vid-alfa-barra, data-tinta)
+       y sale en el evento cf:vivo. Sin ClimaTinte o sin paleta del 05, solo se informa el píxel medido. */
+    function medirVivo(cz, ov, cond, tormenta) {
+      if (!NB || !S.h) return;
+      var st = cz.stops, sky = function (f) { var t = f < 0.46 ? f / 0.46 : (f - 0.46) / 0.54, a = f < 0.46 ? st[0] : st[1], b = f < 0.46 ? st[1] : st[2]; return mix(a, b, clamp(t, 0, 1)); };
+      var yE = (S.calma0 != null ? S.calma0 : banda() - 24) / S.h, r = NB.medir(sky, clamp(yE, 0.1, 0.9), 1, 12, 25);
+      if (!r || !r.claro) return;
+      var vivo = { claro: r.claro, oscuro: r.oscuro };
+      if (tormenta && ov && ov.rayos && ov.rayos.activo) vivo.claro = mix(vivo.claro, [255, 255, 255], ov.rayos.destello);   // el destello del rayo suma al más claro
+      S.vivo = vivo; var out = { vivo: vivo, yEstado: +yE.toFixed(3) };
+      if (g.ClimaTinte && ov && ov.nube) {
+        try {
+          var z = g.ClimaTinte.zonas(ov, yE, vivo), rt = document.documentElement.style;
+          rt.setProperty('--vid-rgb', z.cuerpo.rgb.join(', ')); rt.setProperty('--vid-alfa', z.cuerpo.alfa); rt.setProperty('--vid-alfa-n', z.cuerpo.alfa);
+          rt.setProperty('--vid-alfa-cab', z.cab.alfa); rt.setProperty('--vid-alfa-barra', z.barra.alfa); document.documentElement.dataset.tinta = z.tinta; out.tinte = z;
+        } catch (e) { /* sin tinte: el CSS por estado sigue mandando */ }
+      }
+      if (S.efectivo) S.efectivo.vivo = out;
+      try { cont.dispatchEvent(new CustomEvent('cf:vivo', { detail: out })); } catch (e) { /* sin eventos */ }
+    }
     function aplicar(est, caducado) {
       var m = MOMENTOS.indexOf(est.momento) >= 0 ? est.momento : 'dia';
       var condPedida = PERFIL[est.condicion] ? est.condicion : 'neutro', cond = condPedida === 'soleado' ? 'despejado' : condPedida, pf = PERFIL[cond];
@@ -644,11 +770,20 @@
           if (ov && ov.nubes && ov.nubes.alfa > 0) { col = hex(ov.nubes.color); alfa = ov.nubes.alfa; if (ov.nubes.n != null && !conReal) cobC = (ov.nubes.n - 1) / 8; }
           pal = { col: col }; dens = alfa / 0.55;
         }
-        reconstruirNubes(pal, cobC, m, cond, dens);
+        if (NB) { S.nbPal = pal; S.nbDens = dens; S.nbCob = cobC; } else reconstruirNubes(pal, cobC, m, cond, dens);
+      }
+      if (NB) {   // r10: el motor de nubes recibe el estado cada vez (viento y luz cambian sin reconstruir nada; todo se funde en segundos)
+        var pn = S.nbPal || {}, lzN = pn.luz || mix(pn.col || NUBE_BASE[m], CLARO[m], pf.osc > 0.5 ? 0.34 : 0.62 * (1 - pf.osc * 0.8)), smN = pn.som || mix(pn.col || NUBE_BASE[m], pf.osc > 0.5 && m !== 'noche' ? [18, 24, 36] : SOMBRA[m], pf.osc > 0.5 ? 0.85 : 0.7);
+        var alN = clamp((S.nbDens || 1) * 0.9, 0.05, 1), cobN2 = S.nbCob != null ? S.nbCob : cob;
+        if (solK > 0) { alN = Math.max(0.5, Math.min(alN, o.nubesSol)); cobN2 = Math.max(0.3, Math.min(cobN2, 0.36)); }   // QA10b: piso para que crucen 1-2 cirros finos   // sol intenso: pocas nubes finas, translúcidas
+        var gs = solGeom(est, m), L = m === 'noche' ? { x: -0.4, y: -1 } : (cond === 'tormenta' || cond === 'lluvia') ? { x: 0.15, y: -1 } : { x: (gs.x - 50) / 50 * 0.6, y: -1 };
+        NB.setEstado({ cobertura: cobN2, espesor: clamp(pf.osc * 1.2, 0, 1), alfa: alN, viento: v, dirViento: dir, luz: lzN, sombra: smN, sol: { x: gs.x / 100, y: gs.y / 100, k: solK }, luzDir: L });
+        zonas();
       }
 
       // sol intenso (r8)
-      pintarSol();
+      var gsol = solGeom(est, m); S.gsol = gsol;
+      pintarSol(gsol); pintarGlints(gsol, solK);
       sol.style.opacity = solK.toFixed(2); raiz.style.setProperty('--cf-sol', solK.toFixed(2));
       var luzMax = cz.luzMax; if (solK > 0) luzMax = Math.max(luzMax, lum(mix(hex(ov ? ov.cielo[0] : pals[m].cielo[0]), [255, 250, 236], 0.92 * solK)));
       S.solK = solK; S.ult = { condPedida: condPedida, cond: cond, cob: cob };
@@ -668,10 +803,15 @@
       else if (!S.raf && S.n) arrancarLluvia();
 
       raiz.dataset.momento = m; raiz.dataset.condicion = cond; raiz.dataset.caducado = caducado ? '1' : '0';
+      var tn = tinteDe(cz, NB && NB.tinte(), cond, solK, luzMax);
+      raiz.style.setProperty('--cf-tinte-rgb', tn.rgb.map(Math.round).join(',')); raiz.style.setProperty('--cf-lum-max', tn.luzMaxPanel.toFixed(3)); raiz.style.setProperty('--cf-lum-min', tn.luzMinPanel.toFixed(3));
       S.efectivo = { momento: m, condicion: cond, cobertura: +cob.toFixed(2), lluvia: +Iobj.toFixed(2), viento: +v.toFixed(2), caducado: !!caducado,
-        luzMax: +luzMax.toFixed(3), luzMin: +cz.luzMin.toFixed(3), cielo: cz.css, sol: solK, solIntenso: solK >= 0.5, rayos: tormenta };
+        luzMax: +luzMax.toFixed(3), luzMin: +cz.luzMin.toFixed(3), cielo: cz.css, sol: solK, solIntenso: solK >= 0.5, rayos: tormenta,
+        tinte: tn.rgb.map(Math.round), lumMedia: +tn.lumMedia.toFixed(3), luzMaxPanel: +tn.luzMaxPanel.toFixed(3), luzMinPanel: +tn.luzMinPanel.toFixed(3), solPos: S.gsol ? { x: +S.gsol.x.toFixed(1), y: +S.gsol.y.toFixed(1), elevacion: +(S.gsol.el || 0).toFixed(1) } : null,
+        nubes: NB ? { motor: NB.modo, nivel: NB.metricas().nivel, luzLum: +tn.nb.luzLum.toFixed(3), somLum: +tn.nb.somLum.toFixed(3), alfaMax: +tn.nb.alfaMax.toFixed(2) } : null };
       try { cont.dispatchEvent(new CustomEvent('cf:estado', { detail: S.efectivo })); } catch (e) { /* sin eventos */ }
       aplicarMovimiento();
+      if (NB && o.tinteVivo) { clearTimeout(S.tVivo); S.tVivo = setTimeout(function () { medirVivo(cz, ov, cond, tormenta); }, sinMov() ? 200 : 900); }
       if (S.primero) { S.primero = false; requestAnimationFrame(function () { requestAnimationFrame(function () { raiz.classList.remove('cf-sinfade'); }); }); }
     }
 
@@ -712,10 +852,13 @@
 
     return {
       setEstado: setEstado, setSol: setSol,
-      setLibre: function (px) { var antes = banda(); S.libre = +px > 0 ? +px : 0; if (Math.abs(banda() - antes) > 20 && S.efectivo) { S.sinFundirNubes = true; S.forzar = true; revisar(); dimensionar(); } if (sinMov() && S.Iobj > 0.01) pintarEstatica(); },
+      setLibre: function (px) { var antes = banda(); S.libre = +px > 0 ? +px : 0; if (Math.abs(banda() - antes) > 20 && S.efectivo) { S.sinFundirNubes = true; S.forzar = true; revisar(); dimensionar(); } zonas(); if (S.gsol && glintEls.length) pintarGlints(S.gsol, S.solK); if (sinMov() && S.Iobj > 0.01) pintarEstatica(); },
+      /* r10: la app avisa dónde está el dato vital (próxima alta/baja): px desde el borde de arriba del contenedor. Ahí no se mueve nada (ni lluvia ni nube con contraste). Sin llamar: borde del panel + calmaPx. */
+      setCalma: function (y0, y1) { S.calma0 = +y0 >= 0 ? +y0 : null; S.calma1 = +y1 >= 0 ? +y1 : null; zonas(); if (sinMov() && S.Iobj > 0.01) pintarEstatica(); },
       estado: function () { return { pedido: S.pedido, efectivo: S.efectivo, caducado: S.caducado, modo: sinMov() ? 'quieto' : (quieto() ? 'pausa' : 'vivo'), reducido: S.reducido, degradado: S.degradado }; },
       metricas: function () { return { fps: +S.fps.toFixed(1), msDibujo: +S.ms.toFixed(2), gotas: S.n, ondas: S.ondas.length, nubes: S.nubes.length, factor: +S.factor.toFixed(2), lluviaActiva: !!S.raf,
-        rayos: S.rayo.total / 2, destellos: S.rayo.total, destellosMax1s: S.rayo.pico, rayoPendiente: !!S.rayo.timer, sol: S.solK }; },
+        rayos: S.rayo.total / 2, destellos: S.rayo.total, destellosMax1s: S.rayo.pico, rayoPendiente: !!S.rayo.timer, sol: S.solK, nubesMotor: NB ? NB.metricas() : null }; },
+      nubes: function () { return NB; },
       /* pruebas: dispara un rayo ahora (respeta el tope de 3 destellos por segundo; devuelve false si no cabe o si no hay tormenta) */
       rayoYa: function () { return disparar(); },
       /* pruebas y capturas: deja UN rayo congelado en el instante t (ms desde que cae; 120 = recién caído, con el destello en su pico). Detiene los rayos automáticos hasta soltarRayo(). */
@@ -733,12 +876,12 @@
       destruir: function () {
         clearInterval(S.tCaduca); detenerLluvia(); detenerRayos(); if (S.respiro) S.respiro.cancel(); document.removeEventListener('visibilitychange', onVisible);
         if (mq) (mq.removeEventListener ? mq.removeEventListener('change', onMq) : mq.removeListener(onMq));
-        if (ro) ro.disconnect(); S.nubes.forEach(function (n) { if (n.anim) n.anim.cancel(); });
+        if (ro) ro.disconnect(); S.nubes.forEach(function (n) { if (n.anim) n.anim.cancel(); }); if (NB) NB.destruir(); glintEls.forEach(function (x) { if (x.anim) x.anim.cancel(); });
         if (raiz.parentNode) raiz.parentNode.removeChild(raiz);
       }
     };
   }
 
-  g.ClimaFondo = { montar: montar, momentoDe: momentoDe, minutos: minutos, ahoraEnZona: ahoraEnZona, codigoACondicion: codigoACondicion,
+  g.ClimaFondo = { DEF: DEF, montar: montar, momentoDe: momentoDe, minutos: minutos, ahoraEnZona: ahoraEnZona, codigoACondicion: codigoACondicion,
     desdeQuery: desdeQuery, MOMENTOS: MOMENTOS, CONDICIONES: CONDICIONES, PALETAS: PALETAS, PERFIL: PERFIL };
 })(window);
