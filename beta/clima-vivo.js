@@ -49,7 +49,7 @@
   /* cargar: nunca lanza. fuente = 'vivo' (bajó ahora o copia con menos de 29 min) | 'guardado' (falló la red: se usa la última copia) | 'ninguno' */
   async function cargar(opciones) {
     var f = (opciones && opciones.fetch) || root.fetch, ahora = Date.now(), c = leer(CLAVE), ok = c && num(c.t) !== null && c.cur && num(c.cur.code) !== null;
-    if (ok && ahora - c.t >= 0 && ahora - c.t < TTL_FRESCO && !(opciones && opciones.forzar)) return { fuente: 'vivo', t: c.t, cur: c.cur, delCache: true };
+    if (ok && num(c.cur.temp) !== null && ahora - c.t >= 0 && ahora - c.t < TTL_FRESCO && !(opciones && opciones.forzar)) return   /* una copia sin temperatura (de antes del 19 oct) no cuenta como fresca: se pide una nueva */ { fuente: 'vivo', t: c.t, cur: c.cur, delCache: true };
     try {
       var v = await pedir(f), t = Date.now();
       guardar(CLAVE, { t: t, cur: v.cur });
