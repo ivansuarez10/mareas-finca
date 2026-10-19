@@ -67,8 +67,8 @@
     nubesVivas: true,     // r10: nubes con ruido fractal (ClimaNubes). false = las texturas con WAAPI de la r8
     motorNubes: 'auto',   // 'auto' (webgl, y canvas si no hay) | 'webgl' | 'canvas'
     nubesRetardo: 0,      // r10: ms antes de que el cielo arranque a moverse (la entrada del camarón de la r9 termina primero; el cuadro fijo se ve desde el inicio)
-    velocidadNubes: 1.5,  // r10: multiplicador de velocidad (1 = cruzar el ancho en >= 90 s; 1.5 = ~60 s). Ivan (19 oct): el movimiento se sentia quieto, se sube a 1.5
-    escalaTiempo: 1,      // r10: reloj acelerado SOLO para video de demostración (nunca en producción)
+    velocidadNubes: 3,  // r10: multiplicador de velocidad (1 = cruzar el ancho en >= 90 s; 1.5 = ~60 s). Ivan (19 oct): el movimiento se sentia quieto, se sube a 1.5
+    escalaTiempo: 1.5,    // Ivan (19 oct): 'se ve muy estático' -> nubes ~3x mas movimiento que antes (cercana ~12 px/s, cirros ~5 px/s) y formas que cambian mas rapido
     tinteVivo: true,      // r10: mide el píxel más claro/oscuro y calcula el tinte del cristal con ClimaTinte (si está cargado)
     nubesSol: 0.75,        // r10: opacidad de las nubes finas con sol intenso (la r8 las dejaba en 0,15: no se veían)
     panelK: 0.8,          // r10b: cuánto de nube queda bajo el panel (0-1); r10 era 0,55 y a través del cristal se veía un degradado liso
