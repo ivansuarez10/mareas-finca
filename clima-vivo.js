@@ -9,7 +9,7 @@
   'use strict';
   var LAT = 13.39, LON = -87.45;   // costa de San Lorenzo, Valle (misma referencia que la marea), no la finca
   var URL = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON +
-    '&current=weather_code,cloud_cover,precipitation,wind_speed_10m,wind_direction_10m,is_day&daily=sunrise,sunset&timezone=America%2FTegucigalpa&forecast_days=1';
+    '&current=temperature_2m,weather_code,cloud_cover,precipitation,wind_speed_10m,wind_direction_10m,is_day&daily=sunrise,sunset&timezone=America%2FTegucigalpa&forecast_days=1';
   var CLAVE = 'mareas-clima-v1', CLAVE_SOL = 'mareas-clima-sol-v1';
   var MIN = 6e4, TTL_FRESCO = 29 * MIN, REFRESCO = 30 * MIN, TOPE = 8000, SOL_VALE = 30 * 864e5;
   var SOL_ARRANQUE = ['05:45', '17:45'];   // solo hasta la primera respuesta del primer uso; es una hora aproximada, no un dato medido
@@ -25,7 +25,7 @@
     if (!c || num(c.weather_code) === null) return null;
     var d = j.daily, sal = d && d.sunrise && hhmm(d.sunrise[0]), pue = d && d.sunset && hhmm(d.sunset[0]);
     return {
-      cur: { code: c.weather_code, nubes: num(c.cloud_cover), lluvia: num(c.precipitation), viento: num(c.wind_speed_10m), dir: num(c.wind_direction_10m), esDia: c.is_day === 0 ? false : c.is_day === 1 ? true : null },
+      cur: { code: c.weather_code, temp: num(c.temperature_2m), nubes: num(c.cloud_cover), lluvia: num(c.precipitation), viento: num(c.wind_speed_10m), dir: num(c.wind_direction_10m), esDia: c.is_day === 0 ? false : c.is_day === 1 ? true : null },
       sol: sal && pue ? { salida: sal, puesta: pue } : null
     };
   }
@@ -61,6 +61,19 @@
     }
   }
 
+
+  /* Texto del tiempo como lo dice una app de clima normal (codigos WMO de Open-Meteo). Codigo desconocido -> null (no se afirma nada). */
+  var TEXTOS = { 0: ['Soleado', 'Despejado'], 1: ['Mayormente soleado', 'Mayormente despejado'], 2: 'Parcialmente nublado', 3: 'Nublado', 45: 'Niebla', 48: 'Niebla',
+    51: 'Llovizna', 53: 'Llovizna', 55: 'Llovizna intensa', 56: 'Llovizna', 57: 'Llovizna intensa', 61: 'Lluvia ligera', 63: 'Lluvia', 65: 'Lluvia fuerte', 66: 'Lluvia', 67: 'Lluvia fuerte',
+    80: 'Chubascos ligeros', 81: 'Chubascos', 82: 'Chubascos fuertes', 95: 'Tormenta', 96: 'Tormenta con granizo', 99: 'Tormenta con granizo' };
+  function textoClima(code, esDia) { var t = TEXTOS[code]; if (t == null) return null; return Array.isArray(t) ? (esDia === false ? t[1] : t[0]) : t; }
+  var CADUCA = 150 * MIN;   // misma vigencia que el cielo: una copia mas vieja no se muestra como "ahora"
+  function paraTexto(copia) {
+    var c = copia && copia.cur; if (!c || typeof copia.t !== 'number' || Date.now() - copia.t > CADUCA) return null;
+    var tx = textoClima(c.code, c.esDia); if (!tx) return null;
+    return { texto: tx, temp: c.temp == null ? null : c.temp, medidoEn: copia.t };
+  }
+
   function solGuardado() {
     var s = leer(CLAVE_SOL);
     if (s && /^\d\d:\d\d$/.test(s.salida) && /^\d\d:\d\d$/.test(s.puesta) && num(s.t) !== null && Date.now() - s.t < SOL_VALE) return [s.salida, s.puesta];
@@ -81,6 +94,7 @@
     function aplicar(copia) {   // copia = { t, cur } o null
       var sol = solGuardado(); motor.setSol(sol[0], sol[1]);
       if (copia && copia.cur) motor.setEstado(paraMotor(copia)); else motor.setEstado({ condicion: 'neutro', esDia: true });
+      if (op.alClima) { try { op.alClima(paraTexto(copia)); } catch (e) { /* el texto nunca rompe el cielo */ } }
     }
 
     async function traer(forzar) {
@@ -105,12 +119,12 @@
       motor: motor, traer: traer,
       info: function () { return { fuente: info.fuente, medidoEn: info.medidoEn, error: info.error, forzado: !!forzado, motor: motor.estado() }; },
       /* SOLO PRUEBAS (clima-prueba.js): fija un estado a mano / vuelve al clima real */
-      forzar: function (e) { forzado = e; motor.setEstado(e); },
+      forzar: function (e) { forzado = e; motor.setEstado(e); if (op.alClima) { try { op.alClima(null); } catch (x) {} } },
       soltar: function () { forzado = null; aplicar(ultimo && ultimo.cur ? { t: ultimo.t, cur: ultimo.cur } : (leer(CLAVE) || null)); }
     };
     root.ClimaVivo.actual = api;
     return api;
   }
 
-  root.ClimaVivo = { iniciar: iniciar, cargar: cargar, validar: validar, paraMotor: paraMotor, URL: URL, LAT: LAT, LON: LON };
+  root.ClimaVivo = { iniciar: iniciar, textoClima: textoClima, cargar: cargar, validar: validar, paraMotor: paraMotor, URL: URL, LAT: LAT, LON: LON };
 })(window);

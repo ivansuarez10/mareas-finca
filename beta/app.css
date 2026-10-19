@@ -222,3 +222,10 @@ button { font: inherit; color: inherit; }
 
 /* r10b-QA: con texto blanco el refuerzo local nunca baja de .28 (noche-lluvia tenía 0 y el pie daba 4,2) */
 :root[data-tinta="claro"] { --loc-alfa: max(var(--vid-loc, 0), .28); }
+
+/* CLIMA AHORA (19 oct 2026): temperatura y condicion con palabras, sobre el cielo, bajo la pastilla. Misma tinta y halo que la linea de estado. */
+.clima-ahora { position: absolute; z-index: 2; left: calc(var(--margen) + .375rem); top: calc(max(env(safe-area-inset-top, 0px), 24px) + 52px + min(.75rem, 12px)); max-width: calc(100% - var(--margen) * 2); pointer-events: none; color: var(--tx); text-shadow: var(--sombra-tx), var(--sombra-tx); }
+.clima-ahora[hidden] { display: none; }
+.cl-temp { display: block; font-size: min(3.25rem, 52px);   /* tope en px: con letra grande no se come la franja de cielo */ font-weight: 350; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.cl-temp:empty { display: none; }
+.cl-txt { display: block; margin-top: .25rem; font-size: min(1.25rem, 22px); font-weight: 600; line-height: 1.2; }

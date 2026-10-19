@@ -3,7 +3,7 @@
    SOLO atiende archivos de este mismo origen. Las consultas a marine-api.open-meteo.com (mareas) y api.open-meteo.com (clima, ronda 7) NO pasan por aquí:
    las manejan datos-vivos.js y clima-vivo.js (con su copia en localStorage) y, sin red, falla limpio y la app sigue con lo guardado.
    Al cambiar cualquier archivo de la app, subir V (mareas-v17, ...) para que el celular renueve la copia completa. */
-const V = 'mareas-beta-v29';   // prefijo propio: no toca ni se deja borrar por la app oficial (mismo origen)
+const V = 'mareas-beta-v30';   // prefijo propio: no toca ni se deja borrar por la app oficial (mismo origen)
 const F = ['./', 'index.html', 'app.js', 'app.css', 'tokens.css', 'data.js', 'datos-vivos.js', 'mareas-cristal.css', 'mareas-cristal.js', 'clima-fondo.css', 'clima-fondo.js', 'clima-nubes.js', 'tinte-motor.js', 'tinte-estados.css', 'clima-paletas.js', 'clima-vivo.js', 'fuentes/figtree-latin.woff2', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

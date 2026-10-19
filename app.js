@@ -127,6 +127,7 @@ T.climaCredito = 'Datos del clima: <a href="https://open-meteo.com" target="_bla
 const MARCA = '<svg viewBox="1 1.5 35.5 25.5" focusable="false"><use href="#fs-p" fill="#F2E9D0"/></svg>';
 app.innerHTML = '<div class="fondo" id="fondo"></div>' +
   '<header class="cab vidrio" id="cab"><span class="cab__marca" aria-hidden="true">' + MARCA + '</span><h1>' + T.nombre + '</h1></header>' +
+  '<div class="clima-ahora" id="climaAhora" hidden><span class="cl-temp" id="clTemp"></span><span class="cl-txt" id="clTxt"></span></div>' +
   '<div class="pila" id="pila"><p class="estado" id="estado" hidden></p><main class="panel vidrio" id="panel">' +
   '<div class="cont" id="hoja" tabindex="-1"><div class="vista" id="vista"></div></div><div class="pie" id="pie"></div></main>' +
   '<nav class="barra vidrio" id="barra" aria-label="Pantallas">' + ['hoy', 'curva', 'dias'].map(k => '<a href="#' + k + '" data-k="' + k + '" aria-label="' + T.tabsAria[k] + '">' + ic('t_' + k) + '<span>' + T.tabs[k] + '</span></a>').join('') + '</nav></div>';
@@ -137,12 +138,22 @@ const pieEl = document.getElementById('pie'), hoja = document.getElementById('ho
    El motor necesita saber cuánto cielo queda libre sobre el panel (ahí se ve la lluvia): se mide con el panel. */
 const fondoEl = document.getElementById('fondo');
 let CV = null;
+/* Ivan (19 oct): "que diga si esta nublado, soleado, lloviendo... como una app normal de clima, e incluso la temperatura". Sale de clima-vivo.js (Open-Meteo, copia que caduca a los 150 min); sin dato vigente, no se muestra nada. */
+function pintarClima(d) {
+  const box = document.getElementById('climaAhora'); if (!box) return;
+  if (!d || !d.texto) { box.hidden = true; return; }
+  document.getElementById('clTemp').textContent = d.temp == null ? '' : Math.round(d.temp) + '°';
+  document.getElementById('clTxt').textContent = d.texto;
+  box.setAttribute('aria-label', 'Clima ahora: ' + d.texto + (d.temp == null ? '' : ', ' + Math.round(d.temp) + ' grados'));
+  box.hidden = false;
+}
+
 /* Ronda 10: la entrada del camarón (r9) manda: el cielo se queda en su primer cuadro hasta que ella termina (completa 2,4 s, corta 0,6 s, desde que abrió la página). El motor lo recibe como nubesRetardo. */
 if (window.ClimaFondo && ClimaFondo.DEF) {
   const entra = window.FS ? (FS.modo === 'completa' ? 2400 : FS.modo === 'corta' ? 600 : 0) : 0;
   ClimaFondo.DEF.nubesRetardo = Math.max(0, Math.round(entra - performance.now()));
 }
-if (window.ClimaVivo && window.ClimaFondo) { try { CV = ClimaVivo.iniciar({ contenedor: fondoEl, paletas: window.ClimaPaletas }); } catch (e) { CV = null; } }
+if (window.ClimaVivo && window.ClimaFondo) { try { CV = ClimaVivo.iniciar({ contenedor: fondoEl, paletas: window.ClimaPaletas, alClima: pintarClima }); } catch (e) { CV = null; } }
 /* El motor necesita dos medidas del layout real (px desde el borde de arriba del fondo, que sobrepasa la pantalla):
    libre = hasta dónde llega el cielo limpio (donde empieza la línea de estado en Hoy, o el panel en Curva y Días): ahí viven lluvia, sol y rayo.
    setCalma(y0, y1) = el rectángulo del dato vital (línea de estado + tarjeta + barra): ahí el motor no mueve nada con contraste, y mide el píxel más claro y el más oscuro para calcular el velo. */
