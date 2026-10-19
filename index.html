@@ -19,9 +19,9 @@ var forzar=false;try{forzar=/[?&]portada=1(&|$)/.test(location.search)}catch(e){
 var h=location.hash.slice(1),profundo=h==='curva'||h==='dias',modo='corta';
 if(forzar)modo='completa';
 else{try{var ya=Date.now(),f=new Date(ya),dia=f.getFullYear()+'-'+(f.getMonth()+1)+'-'+f.getDate(),s=JSON.parse(localStorage.getItem('fs-entrada')||'null')||{},t=typeof s.t==='number'?s.t:0,d=s.d;
-if(d!==dia)modo='completa';else modo='corta';   /* Ivan (17 oct): el camaron carga CADA vez que se abre la app; la completa 1a vez del dia, la corta (0,6 s) las demas */
+modo='completa';   /* Ivan (19 oct): el camaron carga COMPLETO cada vez que se abre la app (la corta de 0,6 s 'se perdia' en el celular) */
 if(profundo&&modo!=='ninguna')modo='ninguna';else if(modo==='completa')d=dia;
-localStorage.setItem('fs-entrada',JSON.stringify({d:d,t:ya}))}catch(e){modo='corta'}}
+localStorage.setItem('fs-entrada',JSON.stringify({d:d,t:ya}))}catch(e){modo='completa'}}
 if(rm&&modo==='corta')modo='completa';   /* reducir movimiento: la completa ya es quieta (0,5 s), asi tambien sale cada vez */
 FS.modo=modo;FS.rm=rm;H.setAttribute('data-fs',modo);
 if(modo!=='ninguna'){H.className+=' fs-portada';window.__fsRetiene=true}
