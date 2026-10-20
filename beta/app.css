@@ -242,3 +242,18 @@ button { font: inherit; color: inherit; }
 .credito-min a { color: inherit; }
 .as-caja a { display: inline; min-height: 0; padding: 0; }
 .as-caja .credito { word-break: normal; }
+
+/* CELULAR HORIZONTAL (20 oct 2026): antes la app lo tomaba por "pantalla grande" (>= 700 px) y le ponia el marco de tarjeta de 440 px; con ~390 px de alto el panel de las mareas se aplastaba a 2 px.
+   Ahora ocupa toda la pantalla: pastilla, temperatura y clima a la izquierda; linea de estado, tarjeta y barra a la derecha. */
+@media (orientation: landscape) and (max-height: 520px) {
+  body { display: block; }
+  .app { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; --tope: var(--margen); --banda: 0px; --banda-libre: 0px; }
+  .pila { left: 50%; right: max(var(--margen), env(safe-area-inset-right, 0px)); top: max(var(--margen), env(safe-area-inset-top, 0px)); bottom: max(var(--margen), env(safe-area-inset-bottom, 0px)); max-height: none; justify-content: flex-end; }
+  .app[data-p="hoy"] .pila { max-height: none; }
+  .panel.alta { height: auto; flex: 1 1 auto; }
+  .cab { left: max(var(--margen), env(safe-area-inset-left, 0px)); }
+  .clima-ahora { left: calc(max(var(--margen), env(safe-area-inset-left, 0px)) + .375rem); }
+  /* la linea de estado pasa a la columna izquierda (abajo) y la tarjeta de las mareas usa todo el alto de la derecha */
+  .app[data-p="hoy"] .estado { position: fixed; left: max(var(--margen), env(safe-area-inset-left, 0px)); bottom: max(var(--margen), env(safe-area-inset-bottom, 0px)); right: auto; margin: 0; padding: 0 .5rem; width: calc(50% - var(--margen) * 2); }
+  .app[data-p="hoy"] .estado::before { display: none; }
+}
